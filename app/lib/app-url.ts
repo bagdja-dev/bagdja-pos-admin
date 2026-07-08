@@ -11,12 +11,17 @@ export function getAppUrl(): string {
 }
 
 /**
- * Bagdja Login (SSO UI) base URL — pakai metode sama seperti bagdja-website:
- * satu variabel NEXT_PUBLIC_AUTH_URL untuk /oauth/authorize, /oauth/token,
- * DAN /logout (di production ketiganya di-proxy jadi satu domain).
+ * Bagdja Login (SSO UI, browser-facing BFF) base URL — pakai metode sama
+ * seperti bagdja-website: satu variabel NEXT_PUBLIC_AUTH_URL untuk
+ * /oauth/authorize, /oauth/token, DAN /logout. Ini HARUS mengarah ke
+ * bagdja-login (port 4002 / login.bagdja.com), BUKAN bagdja-auth (port 4001
+ * / auth.bagdja.com) — bagdja-auth tidak punya route /logout sama sekali,
+ * dipanggil dari sisi server oleh bagdja-login sendiri, browser tidak pernah
+ * langsung ke situ. (Sempat salah dikonfigurasi ke bagdja-auth, menyebabkan
+ * 404 "Cannot GET /logout" saat user logout — lihat plan.md.)
  */
 export function getLoginUrl(): string {
-  return (process.env.NEXT_PUBLIC_AUTH_URL ?? 'http://localhost:4001').replace(/\/$/, '');
+  return (process.env.NEXT_PUBLIC_AUTH_URL ?? 'http://localhost:4002').replace(/\/$/, '');
 }
 
 /**

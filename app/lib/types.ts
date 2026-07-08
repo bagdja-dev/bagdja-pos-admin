@@ -1,3 +1,17 @@
+/** Standar envelope grid platform Bagdja — lihat `core/docs/STANDARDIZATION_GRID_DATA.md`. */
+export interface GridMeta {
+  totalItems: number;
+  itemCount: number;
+  itemsPerPage: number;
+  totalPages: number;
+  currentPage: number;
+}
+
+export interface GridResult<T> {
+  data: T[];
+  meta: GridMeta;
+}
+
 export interface PosBusiness {
   id: string;
   owner_user_id: string;
@@ -103,6 +117,7 @@ export interface PosProduct {
   purchase_price: string;
   sale_price: string;
   min_stock: number;
+  tags: string[];
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -125,6 +140,18 @@ export interface InventoryStock {
   quantity: number;
   updated_at: string;
   product?: PosProduct;
+}
+
+export interface ProductStockDistributionRow {
+  location_id: string;
+  location_name: string;
+  location_type: string;
+  quantity: number;
+}
+
+export interface ProductStockDistribution {
+  rows: ProductStockDistributionRow[];
+  total: number;
 }
 
 export type PosInvoiceType = 'sale' | 'purchase' | 'transfer';
@@ -179,6 +206,7 @@ export interface PosInvoiceServiceLine {
 export interface PosInvoice {
   id: string;
   business_id: string;
+  invoice_number: string;
   type: PosInvoiceType;
   flow: PosInvoiceFlow;
   location_id: string;
@@ -197,6 +225,12 @@ export interface PosInvoice {
   updated_at: string;
   items?: PosInvoiceItem[];
   services?: PosInvoiceServiceLine[];
+  /** Sisa tagihan (0 = lunas/tidak relevan) — cuma ada di response `GET .../invoices` (grid), bukan di detail per-faktur. */
+  outstanding?: number;
+  /** Faktur retur yang menunjuk balik ke faktur ini (kosong untuk transfer) — cuma ada di detail per-faktur. */
+  returns?: PosInvoice[];
+  /** Faktur asal kalau ini faktur retur (`ref_invoice_id` tidak null) — cuma ada di detail per-faktur. */
+  refInvoice?: PosInvoice | null;
 }
 
 export type PosPaymentMethod = 'cash' | 'transfer';
@@ -205,8 +239,9 @@ export interface PosPaymentLedger {
   id: string;
   business_id: string;
   invoice_id: string;
+  invoice?: PosInvoice;
   partner_id: string;
-  entry_type: 'invoice_issued' | 'payment';
+  entry_type: 'invoice_issued' | 'payment' | 'adjustment';
   payment_method: PosPaymentMethod | null;
   proof_photo_url: string | null;
   debit: string;

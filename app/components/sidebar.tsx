@@ -39,6 +39,15 @@ const navItems: NavItem[] = [
     ),
   },
   {
+    label: 'Stok',
+    href: '/dashboard/inventory',
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-8.25-4.5L3.75 7.5m16.5 0-8.25 4.5m8.25-4.5v9l-8.25 4.5m0-9L3.75 7.5m8.25 4.5v9m-8.25-9v9l8.25 4.5" />
+      </svg>
+    ),
+  },
+  {
     label: 'Jasa',
     href: '/dashboard/services',
     icon: (

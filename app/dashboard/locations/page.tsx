@@ -1,59 +1,41 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import {
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Switch,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-  Textarea,
-} from '@heroui/react';
+import { useCallback, useState } from 'react';
+import { Button, Chip, Input, Select, SelectItem, Switch, Textarea } from '@heroui/react';
+import { MapPin } from 'lucide-react';
 
 import { AppModal } from '../../components/app-modal';
+import { DataGrid, type GridColumn } from '../../components/data-grid';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
-import { apiClient, ApiError } from '../../lib/api-client';
+import { useNewShortcut } from '../../hooks/use-new-shortcut';
+import { apiClient, ApiError, buildGridQueryString } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
-import { hasMinRole, LOCATION_TYPE_LABELS, type PosLocation } from '../../lib/types';
+import { hasMinRole, LOCATION_TYPE_LABELS, type GridResult, type PosLocation } from '../../lib/types';
 
 const EMPTY_FORM = { name: '', type: 'store', address: '', is_active: true };
 
 export default function LocationsPage() {
   const { businessId, role, loading: businessLoading } = useBusinessContext();
-  const [locations, setLocations] = useState<PosLocation[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<PosLocation | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const canEdit = hasMinRole(role ?? '', 'manager');
   const canDelete = hasMinRole(role ?? '', 'owner');
 
-  const load = useCallback(async () => {
-    if (!businessId) return;
-    setLoading(true);
-    try {
-      const data = await apiClient<PosLocation[]>(`/api/businesses/${businessId}/locations`);
-      setLocations(data);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Gagal memuat lokasi');
-    } finally {
-      setLoading(false);
-    }
-  }, [businessId]);
+  const fetchData = useCallback(
+    async (params: { page: number; size: number; search: string; filter: Record<string, string>; sort: string }) => {
+      const qs = buildGridQueryString(params);
+      return apiClient<GridResult<PosLocation>>(`/api/businesses/${businessId}/locations?${qs}`);
+    },
+    [businessId],
+  );
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useNewShortcut(openCreate, canEdit && !modalOpen);
 
   function openCreate() {
     setEditing(null);
@@ -86,7 +68,7 @@ export default function LocationsPage() {
         });
       }
       setModalOpen(false);
-      await load();
+      setRefreshTrigger((t) => t + 1);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Gagal menyimpan lokasi');
     } finally {
@@ -99,7 +81,7 @@ export default function LocationsPage() {
     if (!confirm(`Hapus lokasi "${loc.name}"?`)) return;
     try {
       await apiClient(`/api/businesses/${businessId}/locations/${loc.id}`, { method: 'DELETE' });
-      await load();
+      setRefreshTrigger((t) => t + 1);
     } catch (err) {
       alert(err instanceof ApiError ? err.message : 'Gagal menghapus lokasi');
     }
@@ -107,6 +89,42 @@ export default function LocationsPage() {
 
   if (businessLoading) return <LoadingSpinner />;
   if (!businessId) return <NoBusinessState />;
+
+  const columns: GridColumn<PosLocation>[] = [
+    { key: 'name', label: 'Nama', sortable: true },
+    { key: 'type', label: 'Tipe', sortable: true, render: (v) => LOCATION_TYPE_LABELS[v] ?? v },
+    { key: 'address', label: 'Alamat', render: (v) => v ?? '—' },
+    {
+      key: 'is_active',
+      label: 'Status',
+      sortable: true,
+      render: (v) => (
+        <Chip size="sm" color={v ? 'success' : 'default'} variant="flat">
+          {v ? 'Aktif' : 'Nonaktif'}
+        </Chip>
+      ),
+    },
+    ...(canEdit
+      ? [
+          {
+            key: 'actions',
+            label: 'Aksi',
+            render: (_: unknown, row: PosLocation) => (
+              <div className="flex gap-2">
+                <Button size="sm" variant="flat" onPress={() => openEdit(row)}>
+                  Edit
+                </Button>
+                {canDelete && (
+                  <Button size="sm" variant="flat" color="danger" onPress={() => handleDelete(row)}>
+                    Hapus
+                  </Button>
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="space-y-4">
@@ -122,43 +140,31 @@ export default function LocationsPage() {
         )}
       </div>
 
-      {loading ? (
-        <LoadingSpinner />
-      ) : (
-        <Table aria-label="Daftar lokasi">
-          <TableHeader>
-            <TableColumn>NAMA</TableColumn>
-            <TableColumn>TIPE</TableColumn>
-            <TableColumn>ALAMAT</TableColumn>
-            <TableColumn>STATUS</TableColumn>
-            <TableColumn>AKSI</TableColumn>
-          </TableHeader>
-          <TableBody emptyContent="Belum ada lokasi">
-            {locations.map((loc) => (
-              <TableRow key={loc.id}>
-                <TableCell>{loc.name}</TableCell>
-                <TableCell>{LOCATION_TYPE_LABELS[loc.type] ?? loc.type}</TableCell>
-                <TableCell>{loc.address ?? '—'}</TableCell>
-                <TableCell>{loc.is_active ? 'Aktif' : 'Nonaktif'}</TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    {canEdit && (
-                      <Button size="sm" variant="flat" onPress={() => openEdit(loc)}>
-                        Edit
-                      </Button>
-                    )}
-                    {canDelete && (
-                      <Button size="sm" variant="flat" color="danger" onPress={() => handleDelete(loc)}>
-                        Hapus
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+      <DataGrid<PosLocation>
+        columns={columns}
+        fetchData={fetchData}
+        filterFields={[
+          {
+            key: 'type',
+            label: 'Tipe',
+            type: 'select',
+            options: Object.entries(LOCATION_TYPE_LABELS).map(([value, label]) => ({ label, value })),
+          },
+          {
+            key: 'is_active',
+            label: 'Status',
+            type: 'select',
+            options: [
+              { label: 'Aktif', value: 'true' },
+              { label: 'Nonaktif', value: 'false' },
+            ],
+          },
+        ]}
+        defaultSort="name:asc"
+        refreshTrigger={refreshTrigger}
+        rowKey={(row) => row.id}
+        emptyState={{ title: 'Belum ada lokasi', description: 'Tambah cabang toko atau gudang pertama.', icon: <MapPin className="h-8 w-8 text-default-400" /> }}
+      />
 
       <AppModal
         isOpen={modalOpen}
@@ -179,7 +185,7 @@ export default function LocationsPage() {
           <Input
             label="Nama Lokasi"
             value={form.name}
-            onValueChange={(v) => setForm((f) => ({ ...f, name: v }))}
+            onValueChange={(v) => setForm((f) => ({ ...f, name: v.toUpperCase() }))}
             isRequired
           />
           <Select

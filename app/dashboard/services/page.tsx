@@ -1,24 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import {
-  Button,
-  Input,
-  Switch,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from '@heroui/react';
+import { useCallback, useState } from 'react';
+import { Button, Chip, Input, Switch } from '@heroui/react';
+import { Wrench } from 'lucide-react';
 
 import { AppModal } from '../../components/app-modal';
+import { CurrencyInput } from '../../components/currency-input';
+import { DataGrid, type GridColumn } from '../../components/data-grid';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
-import { apiClient, ApiError } from '../../lib/api-client';
+import { useNewShortcut } from '../../hooks/use-new-shortcut';
+import { apiClient, ApiError, buildGridQueryString } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
-import { hasMinRole, type ServiceItem } from '../../lib/types';
+import { hasMinRole, type GridResult, type ServiceItem } from '../../lib/types';
 
 const EMPTY_FORM = { name: '', default_price: '0', is_active: true };
 
@@ -30,32 +24,24 @@ function formatCurrency(value: string) {
 
 export default function ServicesPage() {
   const { businessId, role, loading: businessLoading } = useBusinessContext();
-  const [services, setServices] = useState<ServiceItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ServiceItem | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const canEdit = hasMinRole(role ?? '', 'manager');
 
-  const load = useCallback(async () => {
-    if (!businessId) return;
-    setLoading(true);
-    try {
-      const data = await apiClient<ServiceItem[]>(`/api/businesses/${businessId}/services`);
-      setServices(data);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Gagal memuat jasa');
-    } finally {
-      setLoading(false);
-    }
-  }, [businessId]);
+  const fetchData = useCallback(
+    async (params: { page: number; size: number; search: string; filter: Record<string, string>; sort: string }) => {
+      const qs = buildGridQueryString(params);
+      return apiClient<GridResult<ServiceItem>>(`/api/businesses/${businessId}/services?${qs}`);
+    },
+    [businessId],
+  );
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useNewShortcut(openCreate, canEdit && !modalOpen);
 
   function openCreate() {
     setEditing(null);
@@ -93,7 +79,7 @@ export default function ServicesPage() {
         });
       }
       setModalOpen(false);
-      await load();
+      setRefreshTrigger((t) => t + 1);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Gagal menyimpan jasa');
     } finally {
@@ -106,7 +92,7 @@ export default function ServicesPage() {
     if (!confirm(`Hapus jasa "${s.name}"?`)) return;
     try {
       await apiClient(`/api/businesses/${businessId}/services/${s.id}`, { method: 'DELETE' });
-      await load();
+      setRefreshTrigger((t) => t + 1);
     } catch (err) {
       alert(err instanceof ApiError ? err.message : 'Gagal menghapus jasa');
     }
@@ -114,6 +100,39 @@ export default function ServicesPage() {
 
   if (businessLoading) return <LoadingSpinner />;
   if (!businessId) return <NoBusinessState />;
+
+  const columns: GridColumn<ServiceItem>[] = [
+    { key: 'name', label: 'Nama', sortable: true },
+    { key: 'default_price', label: 'Harga Default', sortable: true, render: (v) => formatCurrency(v) },
+    {
+      key: 'is_active',
+      label: 'Status',
+      sortable: true,
+      render: (v) => (
+        <Chip size="sm" color={v ? 'success' : 'default'} variant="flat">
+          {v ? 'Aktif' : 'Nonaktif'}
+        </Chip>
+      ),
+    },
+    ...(canEdit
+      ? [
+          {
+            key: 'actions',
+            label: 'Aksi',
+            render: (_: unknown, row: ServiceItem) => (
+              <div className="flex gap-2">
+                <Button size="sm" variant="flat" onPress={() => openEdit(row)}>
+                  Edit
+                </Button>
+                <Button size="sm" variant="flat" color="danger" onPress={() => handleDelete(row)}>
+                  Hapus
+                </Button>
+              </div>
+            ),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="space-y-4">
@@ -129,39 +148,25 @@ export default function ServicesPage() {
         )}
       </div>
 
-      {loading ? (
-        <LoadingSpinner />
-      ) : (
-        <Table aria-label="Daftar jasa">
-          <TableHeader>
-            <TableColumn>NAMA</TableColumn>
-            <TableColumn>HARGA DEFAULT</TableColumn>
-            <TableColumn>STATUS</TableColumn>
-            <TableColumn>AKSI</TableColumn>
-          </TableHeader>
-          <TableBody emptyContent="Belum ada jasa">
-            {services.map((s) => (
-              <TableRow key={s.id}>
-                <TableCell>{s.name}</TableCell>
-                <TableCell>{formatCurrency(s.default_price)}</TableCell>
-                <TableCell>{s.is_active ? 'Aktif' : 'Nonaktif'}</TableCell>
-                <TableCell>
-                  {canEdit && (
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="flat" onPress={() => openEdit(s)}>
-                        Edit
-                      </Button>
-                      <Button size="sm" variant="flat" color="danger" onPress={() => handleDelete(s)}>
-                        Hapus
-                      </Button>
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+      <DataGrid<ServiceItem>
+        columns={columns}
+        fetchData={fetchData}
+        filterFields={[
+          {
+            key: 'is_active',
+            label: 'Status',
+            type: 'select',
+            options: [
+              { label: 'Aktif', value: 'true' },
+              { label: 'Nonaktif', value: 'false' },
+            ],
+          },
+        ]}
+        defaultSort="name:asc"
+        refreshTrigger={refreshTrigger}
+        rowKey={(row) => row.id}
+        emptyState={{ title: 'Belum ada jasa', description: 'Tambah jasa/layanan pertama.', icon: <Wrench className="h-8 w-8 text-default-400" /> }}
+      />
 
       <AppModal
         isOpen={modalOpen}
@@ -182,12 +187,11 @@ export default function ServicesPage() {
           <Input
             label="Nama Jasa"
             value={form.name}
-            onValueChange={(v) => setForm((f) => ({ ...f, name: v }))}
+            onValueChange={(v) => setForm((f) => ({ ...f, name: v.toUpperCase() }))}
             isRequired
           />
-          <Input
+          <CurrencyInput
             label="Harga Default"
-            type="number"
             value={form.default_price}
             onValueChange={(v) => setForm((f) => ({ ...f, default_price: v }))}
           />

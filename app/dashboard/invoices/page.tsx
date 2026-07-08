@@ -1,27 +1,26 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import Link from 'next/link';
-import {
-  Button,
-  Chip,
-  Select,
-  SelectItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from '@heroui/react';
+import { useRouter } from 'next/navigation';
+import { Button, Chip } from '@heroui/react';
+import { Receipt } from 'lucide-react';
 
+import { DataGrid, type GridColumn } from '../../components/data-grid';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
-import { apiClient, ApiError } from '../../lib/api-client';
+import { useNewShortcut } from '../../hooks/use-new-shortcut';
+import { apiClient, buildGridQueryString } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
-import { INVOICE_STATUS_LABELS, INVOICE_TYPE_LABELS, PAYMENT_STATUS_LABELS, type PosInvoice } from '../../lib/types';
+import {
+  INVOICE_STATUS_LABELS,
+  INVOICE_TYPE_LABELS,
+  PAYMENT_STATUS_LABELS,
+  type GridResult,
+  type PosInvoice,
+} from '../../lib/types';
 
-function formatCurrency(value: string) {
+function formatCurrency(value: string | number) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
     Number(value),
   );
@@ -35,38 +34,81 @@ const STATUS_COLOR: Record<string, 'default' | 'primary' | 'success' | 'danger'>
 };
 
 export default function InvoicesPage() {
+  const router = useRouter();
   const { businessId, loading: businessLoading } = useBusinessContext();
-  const [invoices, setInvoices] = useState<PosInvoice[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    if (!businessId) return;
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (typeFilter !== 'all') params.set('type', typeFilter);
-      if (statusFilter !== 'all') params.set('status', statusFilter);
-      const qs = params.toString();
-      const data = await apiClient<PosInvoice[]>(
-        `/api/businesses/${businessId}/invoices${qs ? `?${qs}` : ''}`,
-      );
-      setInvoices(data);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Gagal memuat faktur');
-    } finally {
-      setLoading(false);
-    }
-  }, [businessId, typeFilter, statusFilter]);
+  useNewShortcut(() => router.push('/dashboard/invoices/new'));
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const fetchData = useCallback(
+    async (params: { page: number; size: number; search: string; filter: Record<string, string>; sort: string }) => {
+      const qs = buildGridQueryString(params);
+      return apiClient<GridResult<PosInvoice>>(`/api/businesses/${businessId}/invoices?${qs}`);
+    },
+    [businessId],
+  );
 
   if (businessLoading) return <LoadingSpinner />;
   if (!businessId) return <NoBusinessState />;
+
+  const columns: GridColumn<PosInvoice>[] = [
+    { key: 'invoice_number', label: 'No. Faktur', sortable: true, render: (v) => <span className="font-mono text-xs">{v}</span> },
+    {
+      key: 'type',
+      label: 'Tipe',
+      render: (v, row) => (
+        <div className="flex items-center gap-1.5">
+          <span>{INVOICE_TYPE_LABELS[v as PosInvoice['type']]}</span>
+          {row.ref_invoice_id && row.type !== 'transfer' && (
+            <Chip size="sm" color="warning" variant="flat">
+              Retur
+            </Chip>
+          )}
+        </div>
+      ),
+    },
+    { key: 'flow', label: 'Flow', render: (v) => (v === 'in' ? 'Masuk' : 'Keluar') },
+    {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      render: (v) => (
+        <Chip size="sm" color={STATUS_COLOR[v]} variant="flat">
+          {INVOICE_STATUS_LABELS[v as PosInvoice['status']]}
+        </Chip>
+      ),
+    },
+    {
+      key: 'payment_status',
+      label: 'Pembayaran',
+      render: (v) => PAYMENT_STATUS_LABELS[v as PosInvoice['payment_status']],
+    },
+    {
+      key: 'outstanding',
+      label: 'Sisa Pembayaran',
+      render: (v: number | undefined, row) =>
+        row.payment_status === 'not_applicable' || !v ? (
+          <span className="text-default-400">—</span>
+        ) : (
+          <span className="font-medium text-danger">{formatCurrency(v)}</span>
+        ),
+    },
+    { key: 'grand_total', label: 'Total', sortable: true, render: (v) => formatCurrency(v) },
+    {
+      key: 'created_at',
+      label: 'Dibuat',
+      sortable: true,
+      render: (v) => new Date(v).toLocaleString('id-ID'),
+    },
+    {
+      key: 'actions',
+      label: 'Aksi',
+      render: (_: unknown, row: PosInvoice) => (
+        <Button as={Link} href={`/dashboard/invoices/${row.id}`} size="sm" variant="flat">
+          Detail
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-4">
@@ -80,70 +122,46 @@ export default function InvoicesPage() {
         </Button>
       </div>
 
-      <div className="flex gap-3">
-        <Select
-          label="Tipe"
-          className="w-48"
-          selectedKeys={[typeFilter]}
-          onSelectionChange={(keys) => setTypeFilter(Array.from(keys)[0] as string)}
-        >
-          <SelectItem key="all">Semua Tipe</SelectItem>
-          <SelectItem key="sale">Penjualan</SelectItem>
-          <SelectItem key="purchase">Pembelian</SelectItem>
-          <SelectItem key="transfer">Mutasi</SelectItem>
-        </Select>
-        <Select
-          label="Status"
-          className="w-48"
-          selectedKeys={[statusFilter]}
-          onSelectionChange={(keys) => setStatusFilter(Array.from(keys)[0] as string)}
-        >
-          <SelectItem key="all">Semua Status</SelectItem>
-          <SelectItem key="draft">Draft</SelectItem>
-          <SelectItem key="submitted">Submitted</SelectItem>
-          <SelectItem key="settled">Settled</SelectItem>
-          <SelectItem key="void">Void</SelectItem>
-        </Select>
-      </div>
-
-      {error && <p className="text-sm text-danger">{error}</p>}
-
-      {loading ? (
-        <LoadingSpinner />
-      ) : (
-        <Table aria-label="Daftar faktur">
-          <TableHeader>
-            <TableColumn>TIPE</TableColumn>
-            <TableColumn>FLOW</TableColumn>
-            <TableColumn>STATUS</TableColumn>
-            <TableColumn>PEMBAYARAN</TableColumn>
-            <TableColumn>TOTAL</TableColumn>
-            <TableColumn>DIBUAT</TableColumn>
-            <TableColumn>AKSI</TableColumn>
-          </TableHeader>
-          <TableBody emptyContent="Belum ada faktur">
-            {invoices.map((inv) => (
-              <TableRow key={inv.id}>
-                <TableCell>{INVOICE_TYPE_LABELS[inv.type]}</TableCell>
-                <TableCell>{inv.flow === 'in' ? 'Masuk' : 'Keluar'}</TableCell>
-                <TableCell>
-                  <Chip size="sm" color={STATUS_COLOR[inv.status]} variant="flat">
-                    {INVOICE_STATUS_LABELS[inv.status]}
-                  </Chip>
-                </TableCell>
-                <TableCell>{PAYMENT_STATUS_LABELS[inv.payment_status]}</TableCell>
-                <TableCell>{formatCurrency(inv.grand_total)}</TableCell>
-                <TableCell>{new Date(inv.created_at).toLocaleString('id-ID')}</TableCell>
-                <TableCell>
-                  <Button as={Link} href={`/dashboard/invoices/${inv.id}`} size="sm" variant="flat">
-                    Detail
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+      <DataGrid<PosInvoice>
+        columns={columns}
+        fetchData={fetchData}
+        filterFields={[
+          {
+            key: 'type',
+            label: 'Tipe',
+            type: 'select',
+            options: [
+              { label: 'Penjualan', value: 'sale' },
+              { label: 'Pembelian', value: 'purchase' },
+              { label: 'Mutasi', value: 'transfer' },
+            ],
+          },
+          {
+            key: 'status',
+            label: 'Status',
+            type: 'select',
+            options: [
+              { label: 'Draft', value: 'draft' },
+              { label: 'Submitted', value: 'submitted' },
+              { label: 'Settled', value: 'settled' },
+              { label: 'Void', value: 'void' },
+            ],
+          },
+          {
+            key: 'payment_status',
+            label: 'Pembayaran',
+            type: 'select',
+            options: [
+              { label: 'Belum Bayar', value: 'unpaid' },
+              { label: 'Sebagian', value: 'partial' },
+              { label: 'Lunas', value: 'paid' },
+            ],
+          },
+        ]}
+        defaultSort="created_at:desc"
+        rowKey={(row) => row.id}
+        emptyState={{ title: 'Belum ada faktur', description: 'Buat faktur pertama untuk mulai transaksi.', icon: <Receipt className="h-8 w-8 text-default-400" /> }}
+      />
     </div>
   );
 }

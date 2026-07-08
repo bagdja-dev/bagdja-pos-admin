@@ -1,36 +1,45 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button, Select, SelectItem } from '@heroui/react';
+import { useParams, useRouter } from 'next/navigation';
+import { Button } from '@heroui/react';
 
-import { AsyncSearchSelect, type AsyncOption } from '../../../components/async-search-select';
-import { EMPTY_ITEM_ROW, ItemRowsEditor, calcGrandTotal, formatCurrency, type ItemRow } from '../../../components/invoice-item-rows';
-import { ServiceRowsEditor, calcServiceTotal, type ServiceRow } from '../../../components/invoice-service-rows';
-import { LoadingSpinner } from '../../../components/loading-spinner';
-import { NoBusinessState } from '../../../components/no-business-state';
-import { QuickAddContactModal } from '../../../components/quick-add-contact-modal';
-import { apiClient, ApiError } from '../../../lib/api-client';
-import { useBusinessContext } from '../../../context/business-context';
+import { AsyncSearchSelect, type AsyncOption } from '../../../../components/async-search-select';
+import { EMPTY_ITEM_ROW, ItemRowsEditor, calcGrandTotal, formatCurrency, type ItemRow } from '../../../../components/invoice-item-rows';
+import { ServiceRowsEditor, calcServiceTotal, type ServiceRow } from '../../../../components/invoice-service-rows';
+import { LoadingSpinner } from '../../../../components/loading-spinner';
+import { NoBusinessState } from '../../../../components/no-business-state';
+import { QuickAddContactModal } from '../../../../components/quick-add-contact-modal';
+import { apiClient, ApiError } from '../../../../lib/api-client';
+import { useBusinessContext } from '../../../../context/business-context';
 import {
+  INVOICE_TYPE_LABELS,
   LOCATION_TYPE_LABELS,
   type GridResult,
   type PosContact,
   type PosContactType,
   type PosInvoice,
-  type PosInvoiceType,
   type PosLocation,
   type PosProduct,
   type PosStaff,
   type ServiceItem,
-} from '../../../lib/types';
+} from '../../../../lib/types';
 
-export default function NewInvoicePage() {
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-default-200 bg-default-100 px-4 py-2.5">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">{label}</p>
+      <p className="text-sm text-foreground">{value || '—'}</p>
+    </div>
+  );
+}
+
+export default function EditInvoicePage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
   const { businessId, loading: businessLoading } = useBusinessContext();
 
-  const [type, setType] = useState<PosInvoiceType>('sale');
-  const [locationId, setLocationId] = useState('');
+  const [invoice, setInvoice] = useState<PosInvoice | null>(null);
   const [locationLabel, setLocationLabel] = useState('');
   const [partyId, setPartyId] = useState('');
   const [partyLabel, setPartyLabel] = useState('');
@@ -38,13 +47,51 @@ export default function NewInvoicePage() {
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [staff, setStaff] = useState<PosStaff[]>([]);
 
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [contactModalQuery, setContactModalQuery] = useState('');
 
-  const partyType: PosContactType | 'outlet' = type === 'sale' ? 'customer' : type === 'purchase' ? 'supplier' : 'outlet';
+  useEffect(() => {
+    if (!businessId || !params.id) return;
+    setLoading(true);
+    apiClient<PosInvoice>(`/api/businesses/${businessId}/invoices/${params.id}`)
+      .then(async (inv) => {
+        setInvoice(inv);
+        setPartyId(inv.party_id);
+        setItems(
+          (inv.items ?? []).map((it) => ({
+            product_id: it.product_id,
+            product_label: it.product ? `${it.product.name} (${it.product.sku})` : it.product_id,
+            quantity: String(it.quantity),
+            adjusted_price: it.adjusted_price,
+            default_price: it.product ? (inv.type === 'purchase' ? it.product.purchase_price : it.product.sale_price) : '',
+          })),
+        );
+        setServices(
+          (inv.services ?? []).map((s) => ({
+            service_id: s.service_id ?? '',
+            service_label: '',
+            mechanic_id: s.mechanic_id ?? '',
+            label: s.label,
+            amount: s.amount,
+          })),
+        );
+
+        const [locRes, partyRes] = await Promise.all([
+          apiClient<PosLocation>(`/api/businesses/${businessId}/locations/${inv.location_id}`),
+          inv.party_type === 'outlet'
+            ? apiClient<PosLocation>(`/api/businesses/${businessId}/locations/${inv.party_id}`)
+            : apiClient<PosContact>(`/api/businesses/${businessId}/contacts/${inv.party_id}`),
+        ]);
+        setLocationLabel(locRes.name);
+        setPartyLabel(partyRes.name);
+      })
+      .catch((err) => setError(err instanceof ApiError ? err.message : 'Gagal memuat faktur'))
+      .finally(() => setLoading(false));
+  }, [businessId, params.id]);
 
   useEffect(() => {
     if (!businessId) return;
@@ -53,34 +100,24 @@ export default function NewInvoicePage() {
       .catch(() => setStaff([]));
   }, [businessId]);
 
-  const fetchLocationOptions = useCallback(
-    async (search: string): Promise<AsyncOption[]> => {
-      if (!businessId) return [];
-      const res = await apiClient<GridResult<PosLocation>>(
-        `/api/businesses/${businessId}/locations?search=${encodeURIComponent(search)}&size=20`,
-      );
-      return res.data.map((l) => ({ id: l.id, label: l.name, description: LOCATION_TYPE_LABELS[l.type] ?? l.type }));
-    },
-    [businessId],
-  );
-
   const fetchPartyOptions = useCallback(
     async (search: string): Promise<AsyncOption[]> => {
-      if (!businessId) return [];
-      if (type === 'transfer') {
+      if (!businessId || !invoice) return [];
+      if (invoice.party_type === 'outlet') {
         const res = await apiClient<GridResult<PosLocation>>(
           `/api/businesses/${businessId}/locations?search=${encodeURIComponent(search)}&size=20`,
         );
         return res.data
-          .filter((l) => l.id !== locationId)
+          .filter((l) => l.id !== invoice.location_id)
           .map((l) => ({ id: l.id, label: l.name, description: LOCATION_TYPE_LABELS[l.type] ?? l.type }));
       }
+      const partyType: PosContactType = invoice.party_type === 'customer' ? 'customer' : 'supplier';
       const res = await apiClient<GridResult<PosContact>>(
         `/api/businesses/${businessId}/contacts?search=${encodeURIComponent(search)}&filter[type]=${partyType}&size=20`,
       );
       return res.data.map((c) => ({ id: c.id, label: c.name, description: c.phone ?? c.plate_number ?? undefined }));
     },
-    [businessId, type, partyType, locationId],
+    [businessId, invoice],
   );
 
   const fetchProductOptions = useCallback(
@@ -110,13 +147,10 @@ export default function NewInvoicePage() {
     [businessId],
   );
 
-  const grandTotal = calcGrandTotal(items) + (type !== 'transfer' ? calcServiceTotal(services) : 0);
+  const grandTotal = calcGrandTotal(items) + (invoice?.type !== 'transfer' ? calcServiceTotal(services) : 0);
 
   async function handleSubmit() {
-    if (!businessId || !locationId || !partyId) {
-      setError('Lokasi dan pihak terkait wajib diisi');
-      return;
-    }
+    if (!businessId || !invoice || !partyId) return;
     const validItems = items.filter((i) => i.product_id && Number(i.quantity) > 0);
     if (validItems.length === 0) {
       setError('Minimal 1 baris produk dengan quantity valid');
@@ -127,19 +161,16 @@ export default function NewInvoicePage() {
     setSaving(true);
     setError(null);
     try {
-      const invoice = await apiClient<PosInvoice>(`/api/businesses/${businessId}/invoices`, {
-        method: 'POST',
+      await apiClient(`/api/businesses/${businessId}/invoices/${invoice.id}`, {
+        method: 'PATCH',
         body: JSON.stringify({
-          type,
-          location_id: locationId,
-          party_type: partyType,
           party_id: partyId,
           items: validItems.map((i) => ({
             product_id: i.product_id,
             quantity: Number(i.quantity),
             ...(i.adjusted_price ? { adjusted_price: Number(i.adjusted_price) } : {}),
           })),
-          ...(type !== 'transfer' && validServices.length > 0
+          ...(invoice.type !== 'transfer'
             ? {
                 services: validServices.map((s) => ({
                   ...(s.service_id ? { service_id: s.service_id } : {}),
@@ -153,19 +184,34 @@ export default function NewInvoicePage() {
       });
       router.push(`/dashboard/invoices/${invoice.id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Gagal membuat faktur');
+      setError(err instanceof ApiError ? err.message : 'Gagal menyimpan perubahan');
     } finally {
       setSaving(false);
     }
   }
 
-  if (businessLoading) return <LoadingSpinner />;
+  if (businessLoading || loading) return <LoadingSpinner />;
   if (!businessId) return <NoBusinessState />;
+  if (!invoice) return <p className="text-danger">{error ?? 'Faktur tidak ditemukan'}</p>;
+
+  if (invoice.status !== 'draft') {
+    return (
+      <div className="space-y-4">
+        <p className="text-danger">Faktur ini sudah bukan draft, tidak bisa diedit lagi.</p>
+        <Button variant="flat" onPress={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
+          Kembali ke Detail Faktur
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-foreground">Buat Faktur</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Edit Faktur Draft</h1>
+          <p className="font-mono text-sm text-default-500">{invoice.invoice_number}</p>
+        </div>
         <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-2.5 text-right">
           <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Faktur</p>
           <p className="text-lg font-bold text-foreground">{formatCurrency(grandTotal)}</p>
@@ -173,36 +219,12 @@ export default function NewInvoicePage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <Select
-          label="Tipe Faktur"
-          selectedKeys={[type]}
-          onSelectionChange={(keys) => {
-            setType(Array.from(keys)[0] as PosInvoiceType);
-            setPartyId('');
-            setPartyLabel('');
-          }}
-        >
-          <SelectItem key="sale">Penjualan</SelectItem>
-          <SelectItem key="purchase">Pembelian</SelectItem>
-          <SelectItem key="transfer">Mutasi Antar Lokasi</SelectItem>
-        </Select>
+        <ReadOnlyField label="Tipe Faktur" value={INVOICE_TYPE_LABELS[invoice.type]} />
+        <ReadOnlyField label={invoice.type === 'transfer' ? 'Lokasi Asal' : 'Lokasi'} value={locationLabel} />
 
         <AsyncSearchSelect
-          label={type === 'transfer' ? 'Lokasi Asal' : 'Lokasi'}
-          placeholder="Cari lokasi..."
-          selectedId={locationId}
-          selectedLabel={locationLabel}
-          onSelect={(id, label) => {
-            setLocationId(id);
-            setLocationLabel(label);
-          }}
-          fetchOptions={fetchLocationOptions}
-          isRequired
-        />
-
-        <AsyncSearchSelect
-          label={type === 'sale' ? 'Pelanggan' : type === 'purchase' ? 'Supplier' : 'Lokasi Tujuan'}
-          placeholder={type === 'sale' ? 'Cari pelanggan...' : type === 'purchase' ? 'Cari supplier...' : 'Cari lokasi tujuan...'}
+          label={invoice.type === 'sale' ? 'Pelanggan' : invoice.type === 'purchase' ? 'Supplier' : 'Lokasi Tujuan'}
+          placeholder="Cari..."
           selectedId={partyId}
           selectedLabel={partyLabel}
           onSelect={(id, label) => {
@@ -211,21 +233,21 @@ export default function NewInvoicePage() {
           }}
           fetchOptions={fetchPartyOptions}
           onCreateNew={
-            type !== 'transfer'
+            invoice.party_type !== 'outlet'
               ? (query) => {
                   setContactModalQuery(query);
                   setContactModalOpen(true);
                 }
               : undefined
           }
-          createNewLabel={(q) => `Tambah "${q}" sebagai ${type === 'sale' ? 'pelanggan' : 'supplier'} baru`}
+          createNewLabel={(q) => `Tambah "${q}" sebagai ${invoice.party_type === 'customer' ? 'pelanggan' : 'supplier'} baru`}
           isRequired
         />
       </div>
 
-      <ItemRowsEditor items={items} onChange={setItems} invoiceType={type} fetchProductOptions={fetchProductOptions} />
+      <ItemRowsEditor items={items} onChange={setItems} invoiceType={invoice.type} fetchProductOptions={fetchProductOptions} />
 
-      {type !== 'transfer' && (
+      {invoice.type !== 'transfer' && (
         <ServiceRowsEditor
           rows={services}
           onChange={setServices}
@@ -236,16 +258,21 @@ export default function NewInvoicePage() {
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <Button color="primary" fullWidth isLoading={saving} onPress={handleSubmit}>
-        Simpan sebagai Draft
-      </Button>
+      <div className="flex gap-3">
+        <Button variant="flat" onPress={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
+          Batal
+        </Button>
+        <Button color="primary" className="flex-1" isLoading={saving} onPress={handleSubmit}>
+          Simpan Perubahan
+        </Button>
+      </div>
 
-      {businessId && type !== 'transfer' && (
+      {invoice.party_type !== 'outlet' && (
         <QuickAddContactModal
           isOpen={contactModalOpen}
           onClose={() => setContactModalOpen(false)}
           businessId={businessId}
-          type={type === 'sale' ? 'customer' : 'supplier'}
+          type={invoice.party_type === 'customer' ? 'customer' : 'supplier'}
           initialName={contactModalQuery}
           onCreated={(contact) => {
             setPartyId(contact.id);

@@ -1,3 +1,5 @@
+import { emitGlobalError } from './error-bus';
+
 /**
  * Client-side API helper — calls admin BFF proxy (reads httpOnly token server-side).
  */
@@ -28,13 +30,34 @@ export async function apiClient<T = unknown>(
     let message = res.statusText;
     try {
       const body = await res.json();
-      message = body.message ?? body.error ?? JSON.stringify(body);
+      const rawMessage = body.message ?? body.error;
+      message = Array.isArray(rawMessage) ? rawMessage.join(', ') : (rawMessage ?? JSON.stringify(body));
     } catch {
       message = await res.text().catch(() => message);
     }
+    emitGlobalError(message, res.status);
     throw new ApiError(message, res.status);
   }
 
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
+}
+
+/** Bangun query string standar grid (`page/size/search/sort/filter[key]`) dari params `DataGrid`. */
+export function buildGridQueryString(params: {
+  page: number;
+  size: number;
+  search?: string;
+  sort?: string;
+  filter?: Record<string, string>;
+}): string {
+  const qs = new URLSearchParams();
+  qs.set('page', String(params.page));
+  qs.set('size', String(params.size));
+  if (params.search) qs.set('search', params.search);
+  if (params.sort) qs.set('sort', params.sort);
+  for (const [key, value] of Object.entries(params.filter ?? {})) {
+    if (value) qs.set(`filter[${key}]`, value);
+  }
+  return qs.toString();
 }

@@ -28,7 +28,11 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
   }
 
   if (!result.data && result.status >= 400) {
-    return NextResponse.json({ error: result.error ?? 'Request failed' }, { status: result.status });
+    const body =
+      result.errorBody && typeof result.errorBody === 'object'
+        ? result.errorBody
+        : { error: result.error ?? 'Request failed' };
+    return NextResponse.json(body, { status: result.status });
   }
 
   if (result.status === 204) {

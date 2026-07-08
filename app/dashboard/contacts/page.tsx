@@ -1,65 +1,45 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import {
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-  Tabs,
-  Tab,
-} from '@heroui/react';
+import { useCallback, useState } from 'react';
+import { Button, Input, Select, SelectItem } from '@heroui/react';
+import { Users } from 'lucide-react';
 
 import { AppModal } from '../../components/app-modal';
+import { DataGrid, type GridColumn } from '../../components/data-grid';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
-import { apiClient, ApiError } from '../../lib/api-client';
+import { useNewShortcut } from '../../hooks/use-new-shortcut';
+import { apiClient, ApiError, buildGridQueryString } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
-import { hasMinRole, type PosContact, type PosContactType } from '../../lib/types';
+import { hasMinRole, type GridResult, type PosContact, type PosContactType } from '../../lib/types';
 
 const EMPTY_FORM = { type: 'customer' as PosContactType, name: '', phone: '', plate_number: '' };
 
 export default function ContactsPage() {
   const { businessId, role, loading: businessLoading } = useBusinessContext();
-  const [contacts, setContacts] = useState<PosContact[]>([]);
-  const [filter, setFilter] = useState<'all' | PosContactType>('all');
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<PosContact | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const canEdit = hasMinRole(role ?? '', 'cashier');
   const canDelete = hasMinRole(role ?? '', 'manager');
 
-  const load = useCallback(async () => {
-    if (!businessId) return;
-    setLoading(true);
-    try {
-      const qs = filter !== 'all' ? `?type=${filter}` : '';
-      const data = await apiClient<PosContact[]>(`/api/businesses/${businessId}/contacts${qs}`);
-      setContacts(data);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Gagal memuat kontak');
-    } finally {
-      setLoading(false);
-    }
-  }, [businessId, filter]);
+  const fetchData = useCallback(
+    async (params: { page: number; size: number; search: string; filter: Record<string, string>; sort: string }) => {
+      const qs = buildGridQueryString(params);
+      return apiClient<GridResult<PosContact>>(`/api/businesses/${businessId}/contacts?${qs}`);
+    },
+    [businessId],
+  );
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useNewShortcut(openCreate, canEdit && !modalOpen);
 
   function openCreate() {
     setEditing(null);
-    setForm({ ...EMPTY_FORM, type: filter === 'supplier' ? 'supplier' : 'customer' });
+    setForm(EMPTY_FORM);
     setError(null);
     setModalOpen(true);
   }
@@ -88,7 +68,7 @@ export default function ContactsPage() {
         });
       }
       setModalOpen(false);
-      await load();
+      setRefreshTrigger((t) => t + 1);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Gagal menyimpan kontak');
     } finally {
@@ -101,7 +81,7 @@ export default function ContactsPage() {
     if (!confirm(`Hapus kontak "${c.name}"?`)) return;
     try {
       await apiClient(`/api/businesses/${businessId}/contacts/${c.id}`, { method: 'DELETE' });
-      await load();
+      setRefreshTrigger((t) => t + 1);
     } catch (err) {
       alert(err instanceof ApiError ? err.message : 'Gagal menghapus kontak');
     }
@@ -109,6 +89,33 @@ export default function ContactsPage() {
 
   if (businessLoading) return <LoadingSpinner />;
   if (!businessId) return <NoBusinessState />;
+
+  const columns: GridColumn<PosContact>[] = [
+    { key: 'name', label: 'Nama', sortable: true },
+    { key: 'type', label: 'Tipe', sortable: true, render: (v) => (v === 'customer' ? 'Pelanggan' : 'Supplier') },
+    { key: 'phone', label: 'Telepon', render: (v) => v ?? '—' },
+    { key: 'plate_number', label: 'Plat Nomor', render: (v) => v ?? '—' },
+    ...(canEdit
+      ? [
+          {
+            key: 'actions',
+            label: 'Aksi',
+            render: (_: unknown, row: PosContact) => (
+              <div className="flex gap-2">
+                <Button size="sm" variant="flat" onPress={() => openEdit(row)}>
+                  Edit
+                </Button>
+                {canDelete && (
+                  <Button size="sm" variant="flat" color="danger" onPress={() => handleDelete(row)}>
+                    Hapus
+                  </Button>
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="space-y-4">
@@ -124,49 +131,25 @@ export default function ContactsPage() {
         )}
       </div>
 
-      <Tabs selectedKey={filter} onSelectionChange={(k) => setFilter(k as typeof filter)}>
-        <Tab key="all" title="Semua" />
-        <Tab key="customer" title="Pelanggan" />
-        <Tab key="supplier" title="Supplier" />
-      </Tabs>
-
-      {loading ? (
-        <LoadingSpinner />
-      ) : (
-        <Table aria-label="Daftar kontak">
-          <TableHeader>
-            <TableColumn>NAMA</TableColumn>
-            <TableColumn>TIPE</TableColumn>
-            <TableColumn>TELEPON</TableColumn>
-            <TableColumn>PLAT NOMOR</TableColumn>
-            <TableColumn>AKSI</TableColumn>
-          </TableHeader>
-          <TableBody emptyContent="Belum ada kontak">
-            {contacts.map((c) => (
-              <TableRow key={c.id}>
-                <TableCell>{c.name}</TableCell>
-                <TableCell>{c.type === 'customer' ? 'Pelanggan' : 'Supplier'}</TableCell>
-                <TableCell>{c.phone ?? '—'}</TableCell>
-                <TableCell>{c.plate_number ?? '—'}</TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    {canEdit && (
-                      <Button size="sm" variant="flat" onPress={() => openEdit(c)}>
-                        Edit
-                      </Button>
-                    )}
-                    {canDelete && (
-                      <Button size="sm" variant="flat" color="danger" onPress={() => handleDelete(c)}>
-                        Hapus
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+      <DataGrid<PosContact>
+        columns={columns}
+        fetchData={fetchData}
+        filterFields={[
+          {
+            key: 'type',
+            label: 'Tipe',
+            type: 'select',
+            options: [
+              { label: 'Pelanggan', value: 'customer' },
+              { label: 'Supplier', value: 'supplier' },
+            ],
+          },
+        ]}
+        defaultSort="name:asc"
+        refreshTrigger={refreshTrigger}
+        rowKey={(row) => row.id}
+        emptyState={{ title: 'Belum ada kontak', description: 'Tambah pelanggan atau supplier pertama.', icon: <Users className="h-8 w-8 text-default-400" /> }}
+      />
 
       <AppModal
         isOpen={modalOpen}
@@ -197,7 +180,7 @@ export default function ContactsPage() {
           <Input
             label="Nama"
             value={form.name}
-            onValueChange={(v) => setForm((f) => ({ ...f, name: v }))}
+            onValueChange={(v) => setForm((f) => ({ ...f, name: v.toUpperCase() }))}
             isRequired
           />
           <Input label="Telepon" value={form.phone} onValueChange={(v) => setForm((f) => ({ ...f, phone: v }))} />

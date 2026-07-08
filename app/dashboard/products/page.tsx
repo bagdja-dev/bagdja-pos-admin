@@ -1,26 +1,30 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import {
-  Button,
-  Input,
-  Switch,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from '@heroui/react';
+import { useCallback, useState } from 'react';
+import { Button, Chip, Input, Switch } from '@heroui/react';
+import { Package } from 'lucide-react';
 
 import { AppModal } from '../../components/app-modal';
-import { LoadingSpinner } from '../../components/loading-spinner';
+import { CurrencyInput } from '../../components/currency-input';
+import { DataGrid, type GridColumn } from '../../components/data-grid';
 import { NoBusinessState } from '../../components/no-business-state';
-import { apiClient, ApiError } from '../../lib/api-client';
+import { NumberInput } from '../../components/number-input';
+import { LoadingSpinner } from '../../components/loading-spinner';
+import { TagInput } from '../../components/tag-input';
+import { useNewShortcut } from '../../hooks/use-new-shortcut';
+import { apiClient, ApiError, buildGridQueryString } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
-import { hasMinRole, type PosProduct } from '../../lib/types';
+import { hasMinRole, type GridResult, type PosProduct } from '../../lib/types';
 
-const EMPTY_FORM = { sku: '', name: '', purchase_price: '0', sale_price: '0', min_stock: '0', is_active: true };
+const EMPTY_FORM = {
+  sku: '',
+  name: '',
+  purchase_price: '0',
+  sale_price: '0',
+  min_stock: '0',
+  tags: [] as string[],
+  is_active: true,
+};
 
 function formatCurrency(value: string) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
@@ -30,32 +34,24 @@ function formatCurrency(value: string) {
 
 export default function ProductsPage() {
   const { businessId, role, loading: businessLoading } = useBusinessContext();
-  const [products, setProducts] = useState<PosProduct[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<PosProduct | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const canEdit = hasMinRole(role ?? '', 'manager');
 
-  const load = useCallback(async () => {
-    if (!businessId) return;
-    setLoading(true);
-    try {
-      const data = await apiClient<PosProduct[]>(`/api/businesses/${businessId}/products`);
-      setProducts(data);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Gagal memuat produk');
-    } finally {
-      setLoading(false);
-    }
-  }, [businessId]);
+  const fetchData = useCallback(
+    async (params: { page: number; size: number; search: string; filter: Record<string, string>; sort: string }) => {
+      const qs = buildGridQueryString(params);
+      return apiClient<GridResult<PosProduct>>(`/api/businesses/${businessId}/products?${qs}`);
+    },
+    [businessId],
+  );
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useNewShortcut(openCreate, canEdit && !modalOpen);
 
   function openCreate() {
     setEditing(null);
@@ -72,6 +68,7 @@ export default function ProductsPage() {
       purchase_price: p.purchase_price,
       sale_price: p.sale_price,
       min_stock: String(p.min_stock),
+      tags: p.tags ?? [],
       is_active: p.is_active,
     });
     setError(null);
@@ -88,6 +85,7 @@ export default function ProductsPage() {
       purchase_price: Number(form.purchase_price) || 0,
       sale_price: Number(form.sale_price) || 0,
       min_stock: Number(form.min_stock) || 0,
+      tags: form.tags,
       is_active: form.is_active,
     };
     try {
@@ -103,7 +101,7 @@ export default function ProductsPage() {
         });
       }
       setModalOpen(false);
-      await load();
+      setRefreshTrigger((t) => t + 1);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Gagal menyimpan produk');
     } finally {
@@ -116,7 +114,7 @@ export default function ProductsPage() {
     if (!confirm(`Hapus produk "${p.name}"?`)) return;
     try {
       await apiClient(`/api/businesses/${businessId}/products/${p.id}`, { method: 'DELETE' });
-      await load();
+      setRefreshTrigger((t) => t + 1);
     } catch (err) {
       alert(err instanceof ApiError ? err.message : 'Gagal menghapus produk');
     }
@@ -124,6 +122,69 @@ export default function ProductsPage() {
 
   if (businessLoading) return <LoadingSpinner />;
   if (!businessId) return <NoBusinessState />;
+
+  const columns: GridColumn<PosProduct>[] = [
+    ...(canEdit
+      ? [
+        {
+          key: 'actions',
+          label: 'Aksi',
+          render: (_: unknown, row: PosProduct) => (
+            <div className="flex gap-2">
+              <Button size="sm" variant="flat" onPress={() => openEdit(row)}>
+                Edit
+              </Button>
+              <Button size="sm" variant="flat" color="danger" onPress={() => handleDelete(row)}>
+                Hapus
+              </Button>
+            </div>
+          ),
+        },
+      ]
+      : []),
+    { key: 'sku', label: 'SKU', sortable: true },
+    { key: 'name', label: 'Nama', sortable: true },
+    {
+      key: 'purchase_price',
+      label: 'Harga Beli',
+      sortable: true,
+      render: (v) => formatCurrency(v),
+    },
+    {
+      key: 'sale_price',
+      label: 'Harga Jual',
+      sortable: true,
+      render: (v) => formatCurrency(v),
+    },
+    { key: 'min_stock', label: 'Stok Min', sortable: true },
+    {
+      key: 'tags',
+      label: 'Tag',
+      width: '30%',
+      render: (v: string[]) =>
+        v && v.length > 0 ? (
+          <div className="flex gap-1 ">
+            {v.map((tag) => (
+              <Chip key={tag} size="sm" variant="flat">
+                {tag}
+              </Chip>
+            ))}
+          </div>
+        ) : (
+          '—'
+        ),
+    },
+    {
+      key: 'is_active',
+      label: 'Status',
+      render: (v) => (
+        <Chip size="sm" color={v ? 'success' : 'default'} variant="flat">
+          {v ? 'Aktif' : 'Nonaktif'}
+        </Chip>
+      ),
+    },
+
+  ];
 
   return (
     <div className="space-y-4">
@@ -139,45 +200,31 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {loading ? (
-        <LoadingSpinner />
-      ) : (
-        <Table aria-label="Daftar produk">
-          <TableHeader>
-            <TableColumn>SKU</TableColumn>
-            <TableColumn>NAMA</TableColumn>
-            <TableColumn>HARGA BELI</TableColumn>
-            <TableColumn>HARGA JUAL</TableColumn>
-            <TableColumn>STOK MIN</TableColumn>
-            <TableColumn>STATUS</TableColumn>
-            <TableColumn>AKSI</TableColumn>
-          </TableHeader>
-          <TableBody emptyContent="Belum ada produk">
-            {products.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell>{p.sku}</TableCell>
-                <TableCell>{p.name}</TableCell>
-                <TableCell>{formatCurrency(p.purchase_price)}</TableCell>
-                <TableCell>{formatCurrency(p.sale_price)}</TableCell>
-                <TableCell>{p.min_stock}</TableCell>
-                <TableCell>{p.is_active ? 'Aktif' : 'Nonaktif'}</TableCell>
-                <TableCell>
-                  {canEdit && (
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="flat" onPress={() => openEdit(p)}>
-                        Edit
-                      </Button>
-                      <Button size="sm" variant="flat" color="danger" onPress={() => handleDelete(p)}>
-                        Hapus
-                      </Button>
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+      <DataGrid<PosProduct>
+        columns={columns}
+        fetchData={fetchData}
+        filterFields={[
+          {
+            key: 'tags',
+            label: 'Tag',
+            type: 'text',
+            placeholder: 'mis. kijang',
+          },
+          {
+            key: 'is_active',
+            label: 'Status',
+            type: 'select',
+            options: [
+              { label: 'Aktif', value: 'true' },
+              { label: 'Nonaktif', value: 'false' },
+            ],
+          },
+        ]}
+        defaultSort="name:asc"
+        refreshTrigger={refreshTrigger}
+        rowKey={(row) => row.id}
+        emptyState={{ title: 'Belum ada produk', description: 'Tambah produk pertama untuk mulai jualan.', icon: <Package className="h-8 w-8 text-default-400" /> }}
+      />
 
       <AppModal
         isOpen={modalOpen}
@@ -202,23 +249,26 @@ export default function ProductsPage() {
             onValueChange={(v) => setForm((f) => ({ ...f, name: v }))}
             isRequired
           />
-          <Input
+          <CurrencyInput
             label="Harga Beli"
-            type="number"
             value={form.purchase_price}
             onValueChange={(v) => setForm((f) => ({ ...f, purchase_price: v }))}
           />
-          <Input
+          <CurrencyInput
             label="Harga Jual"
-            type="number"
             value={form.sale_price}
             onValueChange={(v) => setForm((f) => ({ ...f, sale_price: v }))}
           />
-          <Input
+          <NumberInput
             label="Stok Minimum"
-            type="number"
             value={form.min_stock}
             onValueChange={(v) => setForm((f) => ({ ...f, min_stock: v }))}
+          />
+          <TagInput
+            label="Tag (nama umum/kendaraan yang cocok, opsional)"
+            value={form.tags}
+            onChange={(tags) => setForm((f) => ({ ...f, tags }))}
+            placeholder="mis. BUSI CARRY, lalu Enter"
           />
           <Switch isSelected={form.is_active} onValueChange={(v) => setForm((f) => ({ ...f, is_active: v }))}>
             Aktif

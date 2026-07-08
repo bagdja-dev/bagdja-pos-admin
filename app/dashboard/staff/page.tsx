@@ -18,11 +18,13 @@ import {
 import { AppModal } from '../../components/app-modal';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
+import { useNewShortcut } from '../../hooks/use-new-shortcut';
 import { apiClient, ApiError } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
 import {
   hasMinRole,
   ROLE_LABELS,
+  type GridResult,
   type PosLocation,
   type PosRole,
   type PosStaff,
@@ -55,10 +57,10 @@ export default function StaffPage() {
     try {
       const [staffData, locationData] = await Promise.all([
         apiClient<PosStaff[]>(`/api/businesses/${businessId}/staff`),
-        apiClient<PosLocation[]>(`/api/businesses/${businessId}/locations`),
+        apiClient<GridResult<PosLocation>>(`/api/businesses/${businessId}/locations?size=200`),
       ]);
       setStaff(staffData);
-      setLocations(locationData);
+      setLocations(locationData.data);
 
       if (canManage) {
         const invitationData = await apiClient<PosStaffInvitation[]>(
@@ -76,6 +78,8 @@ export default function StaffPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useNewShortcut(openInvite, canManage && !modalOpen);
 
   function openInvite() {
     setForm({ email: '', role: 'cashier', location_id: locations[0]?.id ?? '' });

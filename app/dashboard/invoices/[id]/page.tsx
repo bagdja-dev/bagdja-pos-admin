@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Button,
   Chip,
@@ -17,8 +18,12 @@ import {
 } from '@heroui/react';
 
 import { AppModal } from '../../../components/app-modal';
+import { CurrencyInput } from '../../../components/currency-input';
 import { LoadingSpinner } from '../../../components/loading-spinner';
+import { NumberInput } from '../../../components/number-input';
 import { NoBusinessState } from '../../../components/no-business-state';
+import { PaymentProofUploader } from '../../../components/payment-proof-uploader';
+import { PrintReceiptButton } from '../../../components/print-receipt-button';
 import { apiClient, ApiError } from '../../../lib/api-client';
 import { useBusinessContext } from '../../../context/business-context';
 import {
@@ -39,7 +44,7 @@ function formatCurrency(value: string) {
 export default function InvoiceDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { businessId, loading: businessLoading } = useBusinessContext();
+  const { businessId, activeMembership, loading: businessLoading } = useBusinessContext();
 
   const [invoice, setInvoice] = useState<PosInvoice | null>(null);
   const [ledger, setLedger] = useState<{ entries: PosPaymentLedger[]; outstanding: number } | null>(null);
@@ -60,6 +65,9 @@ export default function InvoiceDetailPage() {
 
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [returnQty, setReturnQty] = useState<Record<string, string>>({});
+
+  const [nonCashModalOpen, setNonCashModalOpen] = useState(false);
+  const [nonCashNote, setNonCashNote] = useState('');
 
   const load = useCallback(async () => {
     if (!businessId || !params.id) return;
@@ -160,6 +168,25 @@ export default function InvoiceDetailPage() {
     }
   }
 
+  async function handleSettleNonCash() {
+    if (!businessId || !invoice) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await apiClient(`/api/businesses/${businessId}/invoices/${invoice.id}/settle-non-cash`, {
+        method: 'POST',
+        body: JSON.stringify({ ...(nonCashNote ? { note: nonCashNote } : {}) }),
+      });
+      setNonCashModalOpen(false);
+      setNonCashNote('');
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Gagal menyelesaikan tagihan');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleReturn() {
     if (!businessId || !invoice) return;
     setBusy(true);
@@ -201,11 +228,16 @@ export default function InvoiceDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Faktur {INVOICE_TYPE_LABELS[invoice.type]}
-            {invoice.ref_invoice_id && ' (Retur)'}
-          </h1>
-          <p className="text-sm text-default-500">{invoice.id}</p>
+          <h1 className="text-2xl font-bold text-foreground">Faktur {INVOICE_TYPE_LABELS[invoice.type]}</h1>
+          <p className="font-mono text-sm text-default-500">{invoice.invoice_number}</p>
+          {invoice.refInvoice && (
+            <p className="mt-1 text-sm text-default-500">
+              Retur dari{' '}
+              <Link href={`/dashboard/invoices/${invoice.refInvoice.id}`} className="font-mono text-primary hover:underline">
+                {invoice.refInvoice.invoice_number}
+              </Link>
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <Chip color={invoice.status === 'void' ? 'danger' : 'primary'} variant="flat">
@@ -220,6 +252,9 @@ export default function InvoiceDetailPage() {
       <div className="flex flex-wrap gap-2">
         {invoice.status === 'draft' && (
           <>
+            <Button variant="flat" onPress={() => router.push(`/dashboard/invoices/${invoice.id}/edit`)}>
+              Edit
+            </Button>
             <Button color="primary" isLoading={busy} onPress={handleSubmit}>
               Submit Faktur
             </Button>
@@ -233,6 +268,11 @@ export default function InvoiceDetailPage() {
             Catat Pembayaran
           </Button>
         )}
+        {canPay && invoice.ref_invoice_id && (ledger?.outstanding ?? 0) > 0 && (
+          <Button variant="flat" onPress={() => setNonCashModalOpen(true)}>
+            Tandai Lunas (Tukar Barang)
+          </Button>
+        )}
         {canSettle && (
           <Button color="secondary" onPress={() => setSettleModalOpen(true)}>
             Settlement (Terima Barang)
@@ -242,6 +282,13 @@ export default function InvoiceDetailPage() {
           <Button variant="flat" onPress={() => setReturnModalOpen(true)}>
             Buat Retur
           </Button>
+        )}
+        {(invoice.status === 'submitted' || invoice.status === 'settled') && (
+          <PrintReceiptButton
+            invoice={invoice}
+            businessName={activeMembership?.business.name ?? ''}
+            locationName={activeMembership?.location?.name}
+          />
         )}
       </div>
 
@@ -271,7 +318,7 @@ export default function InvoiceDetailPage() {
         </Table>
       </div>
 
-      {invoice.type === 'sale' && (invoice.services?.length ?? 0) > 0 && (
+      {invoice.type !== 'transfer' && (invoice.services?.length ?? 0) > 0 && (
         <div>
           <h2 className="mb-2 text-lg font-semibold text-foreground">Jasa</h2>
           <Table aria-label="Jasa faktur">
@@ -328,11 +375,45 @@ export default function InvoiceDetailPage() {
             <TableBody>
               {ledger.entries.map((e) => (
                 <TableRow key={e.id}>
-                  <TableCell>{e.entry_type === 'invoice_issued' ? 'Tagihan' : 'Pembayaran'}</TableCell>
+                  <TableCell>
+                    {e.entry_type === 'invoice_issued'
+                      ? 'Tagihan'
+                      : e.entry_type === 'adjustment'
+                        ? 'Penyesuaian (Non-Tunai)'
+                        : 'Pembayaran'}
+                  </TableCell>
                   <TableCell>{e.payment_method ?? '—'}</TableCell>
                   <TableCell>{formatCurrency(e.debit)}</TableCell>
                   <TableCell>{formatCurrency(e.kredit)}</TableCell>
                   <TableCell>{new Date(e.created_at).toLocaleString('id-ID')}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {(invoice.returns?.length ?? 0) > 0 && (
+        <div>
+          <h2 className="mb-2 text-lg font-semibold text-foreground">Retur Terkait</h2>
+          <Table aria-label="Retur terkait">
+            <TableHeader>
+              <TableColumn>NO. FAKTUR</TableColumn>
+              <TableColumn>STATUS</TableColumn>
+              <TableColumn>TOTAL</TableColumn>
+              <TableColumn>AKSI</TableColumn>
+            </TableHeader>
+            <TableBody>
+              {(invoice.returns ?? []).map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-mono text-xs">{r.invoice_number}</TableCell>
+                  <TableCell>{INVOICE_STATUS_LABELS[r.status]}</TableCell>
+                  <TableCell>{formatCurrency(r.grand_total)}</TableCell>
+                  <TableCell>
+                    <Button as={Link} href={`/dashboard/invoices/${r.id}`} size="sm" variant="flat">
+                      Detail
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -367,20 +448,17 @@ export default function InvoiceDetailPage() {
             <SelectItem key="cash">Cash</SelectItem>
             <SelectItem key="transfer">Transfer</SelectItem>
           </Select>
-          <Input
+          <CurrencyInput
             label="Jumlah"
-            type="number"
             value={paymentForm.amount}
             onValueChange={(v) => setPaymentForm((f) => ({ ...f, amount: v }))}
             isRequired
           />
-          {paymentForm.payment_method === 'transfer' && (
-            <Input
-              label="URL Bukti Transfer"
-              placeholder="https://... (upload dulu via /api/uploads/payment-proof)"
+          {paymentForm.payment_method === 'transfer' && businessId && (
+            <PaymentProofUploader
+              businessId={businessId}
               value={paymentForm.proof_photo_url}
-              onValueChange={(v) => setPaymentForm((f) => ({ ...f, proof_photo_url: v }))}
-              isRequired
+              onChange={(url) => setPaymentForm((f) => ({ ...f, proof_photo_url: url }))}
             />
           )}
           <Input
@@ -409,10 +487,9 @@ export default function InvoiceDetailPage() {
       >
         <div className="space-y-3">
           {(invoice.items ?? []).map((item) => (
-            <Input
+            <NumberInput
               key={item.id}
               label={`${item.product?.name ?? item.product_id} (dikirim: ${item.quantity})`}
-              type="number"
               value={received[item.id] ?? String(item.quantity)}
               onValueChange={(v) => setReceived((r) => ({ ...r, [item.id]: v }))}
             />
@@ -439,14 +516,45 @@ export default function InvoiceDetailPage() {
         <div className="space-y-3">
           <p className="text-sm text-default-500">Isi jumlah yang diretur per produk (0 = tidak diretur).</p>
           {(invoice.items ?? []).map((item) => (
-            <Input
+            <NumberInput
               key={item.id}
               label={`${item.product?.name ?? item.product_id} (maks: ${item.quantity})`}
-              type="number"
               value={returnQty[item.id] ?? '0'}
               onValueChange={(v) => setReturnQty((r) => ({ ...r, [item.id]: v }))}
             />
           ))}
+          {error && <p className="text-sm text-danger">{error}</p>}
+        </div>
+      </AppModal>
+
+      {/* Modal: Tandai Lunas Non-Tunai */}
+      <AppModal
+        isOpen={nonCashModalOpen}
+        onClose={() => setNonCashModalOpen(false)}
+        title="Tandai Lunas (Tukar Barang)"
+        footer={
+          <>
+            <Button variant="flat" onPress={() => setNonCashModalOpen(false)}>
+              Batal
+            </Button>
+            <Button color="primary" isLoading={busy} onPress={handleSettleNonCash}>
+              Selesaikan
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-default-500">
+            Sisa tagihan (
+            {ledger ? formatCurrency(String(ledger.outstanding)) : '—'}
+            ) akan ditutup tanpa pergerakan uang — dipakai kalau retur diselesaikan lewat tukar barang, bukan refund tunai.
+          </p>
+          <Input
+            label="Catatan (opsional)"
+            placeholder="mis. Diganti barang baru"
+            value={nonCashNote}
+            onValueChange={setNonCashNote}
+          />
           {error && <p className="text-sm text-danger">{error}</p>}
         </div>
       </AppModal>

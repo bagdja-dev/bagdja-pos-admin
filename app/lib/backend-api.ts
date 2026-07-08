@@ -8,7 +8,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5006';
 export async function backendFetch<T = unknown>(
   path: string,
   options: RequestInit = {},
-): Promise<{ data: T | null; status: number; error?: string }> {
+): Promise<{ data: T | null; status: number; error?: string; errorBody?: unknown }> {
   const { token } = await getSession();
 
   if (!token) {
@@ -28,8 +28,17 @@ export async function backendFetch<T = unknown>(
     });
 
     if (!res.ok) {
-      const body = await res.text();
-      return { data: null, status: res.status, error: body || res.statusText };
+      // Backend (NestJS) selalu balas JSON terstruktur (`{message, error, statusCode}`)
+      // — parse dulu supaya proxy bisa forward apa adanya, bukan dibungkus jadi
+      // string ganda yang bikin apiClient cuma dapat teks JSON mentah.
+      const text = await res.text();
+      let errorBody: unknown = text;
+      try {
+        errorBody = JSON.parse(text);
+      } catch {
+        // bukan JSON, biarkan sebagai teks
+      }
+      return { data: null, status: res.status, error: text || res.statusText, errorBody };
     }
 
     if (res.status === 204) {
