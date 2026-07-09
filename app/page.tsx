@@ -256,7 +256,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="mt-5 text-lg font-semibold italic text-violet-600 sm:text-xl">
-            &ldquo;Tumbuh Kembang Dengan Bagdja&rdquo;
+            &ldquo;Tumbuh Kembang Bersama Bagdja&rdquo;
           </p>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-gray-500 sm:text-xl">
