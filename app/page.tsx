@@ -52,7 +52,7 @@ const features = [
   },
   {
     title: 'Cetak Struk Thermal',
-    desc: 'Cetak struk langsung dari browser ke printer thermal 58-60mm via Bluetooth — tanpa aplikasi tambahan.',
+    desc: 'Cetak struk langsung ke printer thermal 58-60mm via Bluetooth — tanpa aplikasi tambahan.',
     gradient: 'from-rose-500 to-pink-400',
     bg: 'bg-rose-50',
     icon: (
@@ -558,6 +558,27 @@ export default function LandingPage() {
             bisnis lain — dengan filosofi yang sama: alur kerja yang simpel, dan platform yang
             tumbuh bersama bisnis Anda.
           </p>
+
+          <div className="mx-auto mt-8 flex max-w-2xl items-start gap-3 rounded-2xl bg-white/70 p-4 text-left shadow-sm">
+            <div className="mt-0.5 flex-shrink-0 rounded-lg bg-emerald-100 p-2 text-emerald-600">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-900">
+                Transaksi Lancar, Bahkan Tanpa Internet{' '}
+                <span className="ml-1 text-xs font-semibold uppercase tracking-wider text-emerald-600">
+                  Segera Hadir
+                </span>
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-gray-500">
+                Jangan biarkan koneksi internet yang buruk menghentikan bisnis Anda. Cukup buka
+                aplikasinya, Anda tetap bisa mencatat transaksi di lapangan dan data akan otomatis
+                tersinkronisasi saat sinyal kembali pulih.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
