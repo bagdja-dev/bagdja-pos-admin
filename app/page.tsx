@@ -242,7 +242,7 @@ export default function LandingPage() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-violet-500" />
             </span>
-            <span className="text-sm font-medium text-violet-700">Solusi POS Multi-Tenant untuk Retail & Bengkel</span>
+            <span className="text-sm font-medium text-violet-700">Solusi POS Multi-Tenant untuk Bisnis Anda</span>
           </div>
 
           <h1 className="text-4xl font-extrabold leading-[1.1] tracking-tight text-gray-900 sm:text-6xl lg:text-7xl">
