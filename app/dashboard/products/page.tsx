@@ -156,6 +156,15 @@ export default function ProductsPage() {
       sortable: true,
       render: (v) => formatCurrency(v),
     },
+    {
+      key: 'current_stock',
+      label: 'Stok Saat Ini',
+      render: (_: unknown, row: PosProduct) => (
+        <span className={row.current_stock <= row.min_stock ? 'font-medium text-danger' : ''}>
+          {row.current_stock}
+        </span>
+      ),
+    },
     { key: 'min_stock', label: 'Stok Min', sortable: true },
     {
       key: 'tags',

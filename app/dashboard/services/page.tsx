@@ -102,6 +102,25 @@ export default function ServicesPage() {
   if (!businessId) return <NoBusinessState />;
 
   const columns: GridColumn<ServiceItem>[] = [
+    ...(canEdit
+      ? [
+        {
+          key: 'actions',
+          label: 'Aksi',
+          width: '120px',
+          render: (_: unknown, row: ServiceItem) => (
+            <div className="flex gap-2">
+              <Button size="sm" variant="flat" onPress={() => openEdit(row)}>
+                Edit
+              </Button>
+              <Button size="sm" variant="flat" color="danger" onPress={() => handleDelete(row)}>
+                Hapus
+              </Button>
+            </div>
+          ),
+        },
+      ]
+      : []),
     { key: 'name', label: 'Nama', sortable: true },
     { key: 'default_price', label: 'Harga Default', sortable: true, render: (v) => formatCurrency(v) },
     {
@@ -114,24 +133,7 @@ export default function ServicesPage() {
         </Chip>
       ),
     },
-    ...(canEdit
-      ? [
-          {
-            key: 'actions',
-            label: 'Aksi',
-            render: (_: unknown, row: ServiceItem) => (
-              <div className="flex gap-2">
-                <Button size="sm" variant="flat" onPress={() => openEdit(row)}>
-                  Edit
-                </Button>
-                <Button size="sm" variant="flat" color="danger" onPress={() => handleDelete(row)}>
-                  Hapus
-                </Button>
-              </div>
-            ),
-          },
-        ]
-      : []),
+
   ];
 
   return (

@@ -33,6 +33,8 @@ interface AsyncSearchSelectProps {
   onCreateNew?: (query: string) => void;
   /** Label opsi "+ Tambah ..." — default `Tambah "{query}"`. */
   createNewLabel?: (query: string) => string;
+  /** Jika true, menu akan dipaksa penuh selebar halaman dan tidak menggunakan Autocomplete menu. (untuk produk gunakan `ProductSearchSelect` instead) */
+  menuFullWidth?: boolean;
 }
 
 /**
@@ -70,9 +72,19 @@ export function AsyncSearchSelect({
       skipNextFetch.current = false;
       return;
     }
+
+    const trimmedDebouncedInput = debouncedInput.trim();
+    const shouldFetch = trimmedDebouncedInput.length > 0 && !selectedId;
+
+    if (!shouldFetch) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     setLoading(true);
-    fetchOptions(debouncedInput)
+    fetchOptions(trimmedDebouncedInput)
       .then((opts) => {
         if (!cancelled) setItems(opts);
       })
@@ -83,7 +95,7 @@ export function AsyncSearchSelect({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedInput, fetchOptions]);
+  }, [debouncedInput, fetchOptions, selectedId]);
 
   const trimmedInput = inputValue.trim();
   const hasExactMatch = items.some((o) => o.label.toLowerCase() === trimmedInput.toLowerCase());

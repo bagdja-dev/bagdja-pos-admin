@@ -10,6 +10,7 @@ import { ServiceRowsEditor, calcServiceTotal, type ServiceRow } from '../../../.
 import { LoadingSpinner } from '../../../../components/loading-spinner';
 import { NoBusinessState } from '../../../../components/no-business-state';
 import { QuickAddContactModal } from '../../../../components/quick-add-contact-modal';
+import { ReadOnlyField } from '../../../../components/read-only-field';
 import { apiClient, ApiError } from '../../../../lib/api-client';
 import { useBusinessContext } from '../../../../context/business-context';
 import {
@@ -24,15 +25,6 @@ import {
   type PosStaff,
   type ServiceItem,
 } from '../../../../lib/types';
-
-function ReadOnlyField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-default-200 bg-default-100 px-4 py-2.5">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">{label}</p>
-      <p className="text-sm text-foreground">{value || '—'}</p>
-    </div>
-  );
-}
 
 export default function EditInvoicePage() {
   const params = useParams<{ id: string }>();
@@ -58,9 +50,11 @@ export default function EditInvoicePage() {
     if (!businessId || !params.id) return;
     setLoading(true);
     apiClient<PosInvoice>(`/api/businesses/${businessId}/invoices/${params.id}`)
-      .then(async (inv) => {
+      .then((inv) => {
         setInvoice(inv);
         setPartyId(inv.party_id);
+        setLocationLabel(inv.location?.name ?? '');
+        setPartyLabel(inv.party?.name ?? '');
         setItems(
           (inv.items ?? []).map((it) => ({
             product_id: it.product_id,
@@ -79,15 +73,6 @@ export default function EditInvoicePage() {
             amount: s.amount,
           })),
         );
-
-        const [locRes, partyRes] = await Promise.all([
-          apiClient<PosLocation>(`/api/businesses/${businessId}/locations/${inv.location_id}`),
-          inv.party_type === 'outlet'
-            ? apiClient<PosLocation>(`/api/businesses/${businessId}/locations/${inv.party_id}`)
-            : apiClient<PosContact>(`/api/businesses/${businessId}/contacts/${inv.party_id}`),
-        ]);
-        setLocationLabel(locRes.name);
-        setPartyLabel(partyRes.name);
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Gagal memuat faktur'))
       .finally(() => setLoading(false));
@@ -152,11 +137,11 @@ export default function EditInvoicePage() {
   async function handleSubmit() {
     if (!businessId || !invoice || !partyId) return;
     const validItems = items.filter((i) => i.product_id && Number(i.quantity) > 0);
-    if (validItems.length === 0) {
-      setError('Minimal 1 baris produk dengan quantity valid');
+    const validServices = invoice.type !== 'transfer' ? services.filter((s) => s.label.trim() && Number(s.amount) > 0) : [];
+    if (validItems.length === 0 && validServices.length === 0) {
+      setError('Minimal ada satu produk atau satu jasa');
       return;
     }
-    const validServices = services.filter((s) => s.label.trim() && Number(s.amount) > 0);
 
     setSaving(true);
     setError(null);
@@ -253,6 +238,7 @@ export default function EditInvoicePage() {
           onChange={setServices}
           mechanics={staff}
           fetchServiceOptions={fetchServiceOptions}
+          businessId={businessId}
         />
       )}
 

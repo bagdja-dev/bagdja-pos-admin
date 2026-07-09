@@ -4,8 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { Chip, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from '@heroui/react';
 import { PackageSearch } from 'lucide-react';
 
-import { AsyncSearchSelect, type AsyncOption } from '../../components/async-search-select';
+import { type AsyncOption } from '../../components/async-search-select';
 import { LoadingSpinner } from '../../components/loading-spinner';
+import { ProductSearchSelect } from '../../components/product-search-select';
 import { NoBusinessState } from '../../components/no-business-state';
 import { apiClient, ApiError } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
@@ -69,7 +70,7 @@ export default function InventoryDashboardPage() {
         <p className="text-sm text-default-500">Cari satu produk untuk lihat sebaran stoknya di semua lokasi.</p>
       </div>
 
-      <AsyncSearchSelect
+      <ProductSearchSelect
         label="Produk"
         placeholder="Cari nama, SKU, atau tag..."
         selectedId={selectedProduct?.id ?? ''}

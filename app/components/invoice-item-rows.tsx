@@ -3,6 +3,7 @@
 import { Button } from '@heroui/react';
 
 import { AsyncSearchSelect, type AsyncOption } from './async-search-select';
+import { ProductSearchSelect } from './product-search-select';
 import { CurrencyInput } from './currency-input';
 import { NumberInput } from './number-input';
 import type { PosInvoiceType, PosProduct } from '../lib/types';
@@ -69,7 +70,7 @@ export function ItemRowsEditor({ items, onChange, invoiceType, fetchProductOptio
   }
 
   return (
-    <div className="space-y-3">
+    <div className="">
       <p className="text-sm font-medium text-foreground">Barang</p>
       {items.map((item, idx) => {
         const defaultPrice = Number(item.default_price || 0);
@@ -83,37 +84,53 @@ export function ItemRowsEditor({ items, onChange, invoiceType, fetchProductOptio
         const rowTotal = adjustedPrice * (Number(item.quantity) || 0);
 
         return (
-          <div key={idx} className="flex items-end gap-2">
-            <AsyncSearchSelect
-              label="Produk"
+          <div
+            key={idx}
+            className="flex flex-col gap-2 border-b border-default-100 pb-3 last:border-0 md:flex-row md:items-end md:border-0 md:pb-0"
+          >
+            <ProductSearchSelect
+              label=""
               placeholder="Cari nama, SKU, atau tag..."
-              className="flex-1"
+              className="w-full md:flex-1"
               selectedId={item.product_id}
               selectedLabel={item.product_label}
               onSelect={(id, label, raw) => selectProduct(idx, id, label, raw)}
+              invoiceType={invoiceType}
               fetchOptions={fetchProductOptions}
             />
-            <NumberInput
-              label="Qty"
-              className="w-24"
-              value={item.quantity}
-              onValueChange={(v) => updateItem(idx, { quantity: v })}
-            />
-            <CurrencyInput
-              label="Harga"
-              className="w-44"
-              value={item.adjusted_price}
-              onValueChange={(v) => updateItem(idx, { adjusted_price: v })}
-              tone={tone}
-            />
-            <div className="w-32 pb-2.5 text-right text-sm text-default-500">{formatCurrency(rowTotal)}</div>
-            <Button size="sm" variant="flat" color="danger" onPress={() => removeItem(idx)} isDisabled={items.length === 1}>
-              Hapus
-            </Button>
+            <div className="flex items-end gap-2">
+              <NumberInput
+                label=""
+                className="w-20 md:w-24"
+                value={item.quantity}
+                onValueChange={(v) => updateItem(idx, { quantity: v })}
+              />
+              <CurrencyInput
+                label=""
+                className="flex-1 md:w-44"
+                value={item.adjusted_price}
+                onValueChange={(v) => updateItem(idx, { adjusted_price: v })}
+                tone={tone}
+              />
+              <div className="hidden shrink-0 pb-2.5 text-right text-sm text-default-500 md:block md:w-32">
+                {formatCurrency(rowTotal)}
+              </div>
+              <Button
+                size="sm"
+                variant="flat"
+                color="danger"
+                className="shrink-0"
+                onPress={() => removeItem(idx)}
+                isDisabled={items.length === 1}
+              >
+                Hapus
+              </Button>
+            </div>
+            <div className="text-right text-xs text-default-500 md:hidden">Subtotal: {formatCurrency(rowTotal)}</div>
           </div>
         );
       })}
-      <Button size="sm" variant="flat" onPress={addItem}>
+      <Button size="sm" variant="flat" onPress={addItem} className="mt-2">
         + Tambah Baris
       </Button>
     </div>

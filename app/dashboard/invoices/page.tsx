@@ -51,6 +51,16 @@ export default function InvoicesPage() {
   if (!businessId) return <NoBusinessState />;
 
   const columns: GridColumn<PosInvoice>[] = [
+    {
+      key: 'actions',
+      label: 'Aksi',
+      width: '70px',
+      render: (_: unknown, row: PosInvoice) => (
+        <Button as={Link} href={`/dashboard/invoices/${row.id}`} size="sm" variant="flat">
+          Detail
+        </Button>
+      ),
+    },
     { key: 'invoice_number', label: 'No. Faktur', sortable: true, render: (v) => <span className="font-mono text-xs">{v}</span> },
     {
       key: 'type',
@@ -67,6 +77,16 @@ export default function InvoicesPage() {
       ),
     },
     { key: 'flow', label: 'Flow', render: (v) => (v === 'in' ? 'Masuk' : 'Keluar') },
+    {
+      key: 'location',
+      label: 'Lokasi',
+      render: (_: unknown, row: PosInvoice) => row.location?.name ?? '—',
+    },
+    {
+      key: 'party',
+      label: 'Pihak Terkait',
+      render: (_: unknown, row: PosInvoice) => row.party?.name ?? '—',
+    },
     {
       key: 'status',
       label: 'Status',
@@ -99,15 +119,7 @@ export default function InvoicesPage() {
       sortable: true,
       render: (v) => new Date(v).toLocaleString('id-ID'),
     },
-    {
-      key: 'actions',
-      label: 'Aksi',
-      render: (_: unknown, row: PosInvoice) => (
-        <Button as={Link} href={`/dashboard/invoices/${row.id}`} size="sm" variant="flat">
-          Detail
-        </Button>
-      ),
-    },
+
   ];
 
   return (
@@ -156,6 +168,12 @@ export default function InvoicesPage() {
               { label: 'Sebagian', value: 'partial' },
               { label: 'Lunas', value: 'paid' },
             ],
+          },
+          {
+            key: 'party',
+            label: 'Pihak Terkait',
+            type: 'text',
+            placeholder: 'Cari nama pelanggan/supplier/lokasi tujuan...',
           },
         ]}
         defaultSort="created_at:desc"

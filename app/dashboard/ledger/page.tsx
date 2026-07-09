@@ -41,6 +41,16 @@ export default function LedgerPage() {
   if (!businessId) return <NoBusinessState />;
 
   const columns: GridColumn<LedgerRow>[] = [
+    {
+      key: 'actions',
+      label: 'Aksi',
+      width: '70px',
+      render: (_v, row) => (
+        <Button as={Link} href={`/dashboard/ledger/${row.partnerId}`} size="sm" variant="flat">
+          Detail
+        </Button>
+      ),
+    },
     { key: 'partner', label: 'Partner', render: (_v, row) => row.partner?.name ?? row.partnerId },
     {
       key: 'type',
@@ -59,15 +69,7 @@ export default function LedgerPage() {
         </Chip>
       ),
     },
-    {
-      key: 'actions',
-      label: 'Aksi',
-      render: (_v, row) => (
-        <Button as={Link} href={`/dashboard/ledger/${row.partnerId}`} size="sm" variant="flat">
-          Detail
-        </Button>
-      ),
-    },
+
   ];
 
   return (

@@ -24,6 +24,7 @@ import { NumberInput } from '../../../components/number-input';
 import { NoBusinessState } from '../../../components/no-business-state';
 import { PaymentProofUploader } from '../../../components/payment-proof-uploader';
 import { PrintReceiptButton } from '../../../components/print-receipt-button';
+import { ReadOnlyField } from '../../../components/read-only-field';
 import { apiClient, ApiError } from '../../../lib/api-client';
 import { useBusinessContext } from '../../../context/business-context';
 import {
@@ -247,6 +248,18 @@ export default function InvoiceDetailPage() {
             <Chip variant="flat">{PAYMENT_STATUS_LABELS[invoice.payment_status]}</Chip>
           )}
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <ReadOnlyField label="Tipe Faktur" value={INVOICE_TYPE_LABELS[invoice.type]} />
+        <ReadOnlyField
+          label={invoice.type === 'transfer' ? 'Lokasi Asal' : 'Lokasi'}
+          value={invoice.location?.name ?? ''}
+        />
+        <ReadOnlyField
+          label={invoice.type === 'sale' ? 'Pelanggan' : invoice.type === 'purchase' ? 'Supplier' : 'Lokasi Tujuan'}
+          value={invoice.party?.name ?? ''}
+        />
       </div>
 
       <div className="flex flex-wrap gap-2">

@@ -121,6 +121,8 @@ export interface PosProduct {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  /** Total stok saat ini dijumlahkan lintas semua lokasi bisnis (dihitung backend). */
+  current_stock: number;
 }
 
 export interface ServiceItem {
@@ -229,6 +231,10 @@ export interface PosInvoice {
   outstanding?: number;
   /** Faktur retur yang menunjuk balik ke faktur ini (kosong untuk transfer) — cuma ada di detail per-faktur. */
   returns?: PosInvoice[];
+  /** Lokasi yang menjalankan faktur ini — cuma ada di detail per-faktur. */
+  location?: PosLocation;
+  /** Pihak terkait (`party_id` polymorphic) — customer/supplier dari `pos_contacts`, outlet dari `pos_locations`. Cuma ada di detail per-faktur. */
+  party?: PosContact | PosLocation | null;
   /** Faktur asal kalau ini faktur retur (`ref_invoice_id` tidak null) — cuma ada di detail per-faktur. */
   refInvoice?: PosInvoice | null;
 }

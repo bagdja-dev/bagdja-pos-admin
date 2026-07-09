@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Select, SelectItem } from '@heroui/react';
 
@@ -43,6 +43,7 @@ export default function NewInvoicePage() {
 
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [contactModalQuery, setContactModalQuery] = useState('');
+  const hasAutoSelectedLocationRef = useRef(false);
 
   const partyType: PosContactType | 'outlet' = type === 'sale' ? 'customer' : type === 'purchase' ? 'supplier' : 'outlet';
 
@@ -51,6 +52,30 @@ export default function NewInvoicePage() {
     apiClient<PosStaff[]>(`/api/businesses/${businessId}/staff`)
       .then(setStaff)
       .catch(() => setStaff([]));
+  }, [businessId]);
+
+  useEffect(() => {
+    if (!businessId || hasAutoSelectedLocationRef.current) return;
+
+    let cancelled = false;
+    hasAutoSelectedLocationRef.current = true;
+
+    apiClient<GridResult<PosLocation>>(`/api/businesses/${businessId}/locations?size=20`)
+      .then((res) => {
+        if (cancelled || !res.data?.length) return;
+        const firstLocation = res.data[0];
+        setLocationId(firstLocation.id);
+        setLocationLabel(firstLocation.name);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          hasAutoSelectedLocationRef.current = false;
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [businessId]);
 
   const fetchLocationOptions = useCallback(
@@ -118,11 +143,11 @@ export default function NewInvoicePage() {
       return;
     }
     const validItems = items.filter((i) => i.product_id && Number(i.quantity) > 0);
-    if (validItems.length === 0) {
-      setError('Minimal 1 baris produk dengan quantity valid');
+    const validServices = type !== 'transfer' ? services.filter((s) => s.label.trim() && Number(s.amount) > 0) : [];
+    if (validItems.length === 0 && validServices.length === 0) {
+      setError('Minimal ada satu produk atau satu jasa');
       return;
     }
-    const validServices = services.filter((s) => s.label.trim() && Number(s.amount) > 0);
 
     setSaving(true);
     setError(null);
@@ -231,6 +256,7 @@ export default function NewInvoicePage() {
           onChange={setServices}
           mechanics={staff}
           fetchServiceOptions={fetchServiceOptions}
+          businessId={businessId}
         />
       )}
 
