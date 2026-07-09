@@ -62,6 +62,40 @@ const features = [
     ),
   },
   {
+    title: 'Cetak Label Barang + QR',
+    desc: 'Cetak label harga ke sticker thermal 60mm langsung dari HP — QR code (SKU, nama, harga) di samping teks, sekali cetak bisa banyak label.',
+    gradient: 'from-pink-500 to-rose-400',
+    bg: 'bg-pink-50',
+    icon: (
+      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6Z" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Modal & Penarikan Dana',
+    desc: 'Catat suntikan modal dari pemilik/investor dan penarikan (mis. ambil keuntungan) lewat siklus faktur yang sama: draft, submit, bayar — bukan Excel terpisah.',
+    gradient: 'from-indigo-500 to-violet-400',
+    bg: 'bg-indigo-50',
+    icon: (
+      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-18 0h18M4.5 9v.75A2.25 2.25 0 0 0 6.75 12h10.5a2.25 2.25 0 0 0 2.25-2.25V9" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Kas Toko per Lokasi',
+    desc: 'Laporan kas masuk/keluar riil (bukan cuma piutang/hutang) — total gabungan sekaligus rincian per cabang, tinggal klik untuk lihat riwayat transaksinya.',
+    gradient: 'from-teal-500 to-emerald-400',
+    bg: 'bg-teal-50',
+    icon: (
+      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.625c.621 0 1.125.504 1.125 1.125v.375m-18 0V18a2.25 2.25 0 0 0 2.25 2.25h13.5A2.25 2.25 0 0 0 21 18V5.625m-18 0v-.75A.75.75 0 0 1 3.75 4.5h.75m0 0h13.5m0 0v.75a.75.75 0 0 0 .75.75h.75m-15 0h15" />
+      </svg>
+    ),
+  },
+  {
     title: 'Ekosistem Bagdja',
     desc: 'Login via SSO satu akun untuk semua layanan Bagdja — tidak perlu daftar/kelola password terpisah.',
     gradient: 'from-indigo-500 to-blue-400',
@@ -75,10 +109,25 @@ const features = [
 ];
 
 const stats = [
-  { value: '3-in-1', label: 'Faktur Jual/Beli/Mutasi' },
+  { value: '5 Jenis', label: 'Faktur: Jual/Beli/Mutasi/Modal/Penarikan' },
   { value: 'Tanpa Batas', label: 'Cabang & Gudang' },
-  { value: 'Real-time', label: 'Kartu Piutang/Hutang' },
-  { value: '60mm', label: 'Cetak Struk Thermal' },
+  { value: 'Per Lokasi', label: 'Laporan Kas Toko' },
+  { value: '60mm', label: 'Cetak Struk & Label QR' },
+];
+
+/** Pola QR palsu buat mockup visual di landing page — sengaja bukan QR asli, cuma buat kesan visual "ini QR code" di preview. */
+const QR_MOCK_PATTERN = [
+  [1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+  [1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0],
+  [1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+  [1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1],
+  [1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0],
+  [1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0],
+  [1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+  [1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1],
+  [0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0],
+  [1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1],
 ];
 
 export default function LandingPage() {
@@ -202,6 +251,141 @@ export default function LandingPage() {
                 <p className="text-sm leading-relaxed text-gray-500">{f.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Showcase (preview visual fitur unggulan) ────── */}
+      <section className="scroll-mt-20 bg-gradient-to-b from-white to-gray-50 px-4 py-20 sm:py-28">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-16 text-center">
+            <span className="mb-4 inline-block rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-pink-700">
+              Lihat Langsung
+            </span>
+            <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
+              Bukan Cuma Daftar Fitur
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-lg text-gray-500">
+              Dua tampilan yang paling sering dipuji tenant yang sudah pakai — coba lihat sendiri.
+            </p>
+          </div>
+
+          {/* Cetak Label + QR */}
+          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+            <div>
+              <span className="mb-3 inline-block rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-pink-700">
+                Cetak Label Barang
+              </span>
+              <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+                Label harga + QR, langsung dari HP ke sticker printer
+              </h3>
+              <p className="mt-4 text-base leading-relaxed text-gray-500">
+                Klik "Cetak Label" di halaman Produk, tentukan jumlah label yang mau dicetak, dan
+                kirim langsung ke printer thermal 60mm via Bluetooth — tanpa install aplikasi
+                tambahan, tanpa kabel. QR code di kiri label menyimpan SKU, nama, dan harga; teksnya
+                sengaja dicetak besar di kanan supaya tetap gampang dibaca mata tanpa alat scan.
+              </p>
+              <ul className="mt-6 space-y-3 text-sm text-gray-600">
+                {[
+                  'Cetak banyak label sekaligus dalam satu sesi koneksi printer',
+                  'QR berisi SKU, nama produk, dan harga jual terkini',
+                  'Layout QR + teks digambar sebagai satu bitmap — rapi di printer generik apa pun',
+                ].map((point) => (
+                  <li key={point} className="flex items-start gap-2">
+                    <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-pink-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
+                    </svg>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex justify-center">
+              <div className="rounded-3xl bg-gradient-to-br from-pink-100 via-rose-50 to-white p-8 shadow-inner">
+                <div className="w-72 rounded-lg border border-dashed border-gray-300 bg-white p-4 shadow-md">
+                  <div className="flex gap-4">
+                    <div className="grid h-24 w-24 shrink-0 grid-cols-11 gap-[1px] bg-white p-1 ring-1 ring-gray-200">
+                      {QR_MOCK_PATTERN.flat().map((cell, i) => (
+                        <div key={i} className={cell ? 'bg-gray-900' : 'bg-white'} />
+                      ))}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold leading-tight text-gray-900">BUSI NGK CPR8EA-9</p>
+                      <p className="mt-1 text-[11px] text-gray-500">SKU: BUSINGK001</p>
+                      <p className="mt-2 text-lg font-extrabold text-gray-900">Rp 45.000</p>
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-3 text-center text-xs font-medium text-gray-400">Preview label 60mm — bukan ukuran asli</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Kas Toko per Lokasi */}
+          <div className="mt-24 grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+            <div className="flex justify-center lg:order-2">
+              <div className="w-full max-w-sm rounded-2xl border border-gray-100 bg-white p-5 shadow-xl">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Kas Toko</p>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <div className="rounded-lg bg-emerald-50 p-2 text-center">
+                    <p className="text-[10px] font-medium text-emerald-700">Kas Masuk</p>
+                    <p className="text-sm font-bold text-emerald-700">23jt</p>
+                  </div>
+                  <div className="rounded-lg bg-rose-50 p-2 text-center">
+                    <p className="text-[10px] font-medium text-rose-700">Kas Keluar</p>
+                    <p className="text-sm font-bold text-rose-700">18jt</p>
+                  </div>
+                  <div className="rounded-lg bg-violet-50 p-2 text-center">
+                    <p className="text-[10px] font-medium text-violet-700">Selisih</p>
+                    <p className="text-sm font-bold text-violet-700">+5jt</p>
+                  </div>
+                </div>
+                <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-gray-400">Per Lokasi</p>
+                <div className="space-y-2">
+                  {[
+                    { name: 'Toko Pusat', in: '15jt', out: '10jt' },
+                    { name: 'Cabang Selatan', in: '8jt', out: '8jt' },
+                  ].map((row) => (
+                    <div key={row.name} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs">
+                      <span className="font-medium text-gray-700">{row.name}</span>
+                      <span className="text-emerald-600">+{row.in}</span>
+                      <span className="text-rose-500">-{row.out}</span>
+                      <span className="font-semibold text-violet-600">Detail →</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:order-1">
+              <span className="mb-3 inline-block rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-teal-700">
+                Kas Toko per Lokasi
+              </span>
+              <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+                Tahu persis uang masuk-keluar di tiap cabang
+              </h3>
+              <p className="mt-4 text-base leading-relaxed text-gray-500">
+                Bukan cuma piutang-hutang — laporan Kas Toko menghitung kas yang benar-benar
+                bergerak dari pembayaran nyata (termasuk modal masuk & penarikan), digabung jadi
+                satu angka bisnis, sekaligus dipecah per lokasi. Klik salah satu cabang untuk lihat
+                riwayat lengkap transaksi yang membentuk angkanya.
+              </p>
+              <ul className="mt-6 space-y-3 text-sm text-gray-600">
+                {[
+                  'Filter rentang tanggal, dari harian sampai bulanan',
+                  'Rincian per cabang/gudang, bukan cuma total gabungan',
+                  'Drill-down ke histori faktur yang membentuk angka kas',
+                ].map((point) => (
+                  <li key={point} className="flex items-start gap-2">
+                    <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-teal-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
+                    </svg>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>

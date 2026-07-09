@@ -97,30 +97,32 @@ export default function ContactsPage() {
   if (!businessId) return <NoBusinessState />;
 
   const columns: GridColumn<PosContact>[] = [
+    ...(canEdit
+      ? [
+        {
+          key: 'actions',
+          label: 'Aksi',
+          width: '120px',
+          render: (_: unknown, row: PosContact) => (
+            <div className="flex gap-2">
+              <Button size="sm" variant="flat" onPress={() => openEdit(row)}>
+                Edit
+              </Button>
+              {canDelete && (
+                <Button size="sm" variant="flat" color="danger" onPress={() => handleDelete(row)}>
+                  Hapus
+                </Button>
+              )}
+            </div>
+          ),
+        },
+      ]
+      : []),
     { key: 'name', label: 'Nama', sortable: true },
     { key: 'type', label: 'Tipe', sortable: true, render: (v: PosContactType) => CONTACT_TYPE_LABELS[v] },
     { key: 'phone', label: 'Telepon', render: (v) => v ?? '—' },
     { key: 'plate_number', label: 'Plat Nomor', render: (v) => v ?? '—' },
-    ...(canEdit
-      ? [
-          {
-            key: 'actions',
-            label: 'Aksi',
-            render: (_: unknown, row: PosContact) => (
-              <div className="flex gap-2">
-                <Button size="sm" variant="flat" onPress={() => openEdit(row)}>
-                  Edit
-                </Button>
-                {canDelete && (
-                  <Button size="sm" variant="flat" color="danger" onPress={() => handleDelete(row)}>
-                    Hapus
-                  </Button>
-                )}
-              </div>
-            ),
-          },
-        ]
-      : []),
+
   ];
 
   return (

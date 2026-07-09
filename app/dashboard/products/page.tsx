@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { Button, Chip, Input, Switch } from '@heroui/react';
-import { Package } from 'lucide-react';
+import { Button, Chip, Input, Switch, Tooltip } from '@heroui/react';
+import { Package, Pencil, Trash2 } from 'lucide-react';
 
 import { AppModal } from '../../components/app-modal';
 import { CurrencyInput } from '../../components/currency-input';
@@ -10,6 +10,7 @@ import { DataGrid, type GridColumn } from '../../components/data-grid';
 import { NoBusinessState } from '../../components/no-business-state';
 import { NumberInput } from '../../components/number-input';
 import { LoadingSpinner } from '../../components/loading-spinner';
+import { PrintLabelButton } from '../../components/print-label-button';
 import { TagInput } from '../../components/tag-input';
 import { useNewShortcut } from '../../hooks/use-new-shortcut';
 import { apiClient, ApiError, buildGridQueryString } from '../../lib/api-client';
@@ -124,24 +125,37 @@ export default function ProductsPage() {
   if (!businessId) return <NoBusinessState />;
 
   const columns: GridColumn<PosProduct>[] = [
-    ...(canEdit
-      ? [
-        {
-          key: 'actions',
-          label: 'Aksi',
-          render: (_: unknown, row: PosProduct) => (
-            <div className="flex gap-2">
-              <Button size="sm" variant="flat" onPress={() => openEdit(row)}>
-                Edit
-              </Button>
-              <Button size="sm" variant="flat" color="danger" onPress={() => handleDelete(row)}>
-                Hapus
-              </Button>
-            </div>
-          ),
-        },
-      ]
-      : []),
+    {
+      key: 'actions',
+      label: 'Aksi',
+      width: '110px',
+      render: (_: unknown, row: PosProduct) => (
+        <div className="flex gap-1">
+          <PrintLabelButton product={row} />
+          {canEdit && (
+            <>
+              <Tooltip content="Edit">
+                <Button size="sm" variant="flat" isIconOnly onPress={() => openEdit(row)} aria-label="Edit">
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              </Tooltip>
+              <Tooltip content="Hapus">
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="danger"
+                  isIconOnly
+                  onPress={() => handleDelete(row)}
+                  aria-label="Hapus"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </Tooltip>
+            </>
+          )}
+        </div>
+      ),
+    },
     { key: 'sku', label: 'SKU', sortable: true },
     { key: 'name', label: 'Nama', sortable: true },
     {

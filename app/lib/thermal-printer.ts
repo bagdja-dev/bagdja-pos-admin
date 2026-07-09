@@ -12,6 +12,8 @@
  * pertama yang bisa ditulis (auto-discover), bukan hardcode satu UUID.
  */
 
+import QRCode from 'qrcode';
+
 const ESC = 0x1b;
 const GS = 0x1d;
 
@@ -71,6 +73,12 @@ class ReceiptBuilder {
 
   cut(): this {
     return this.push(GS, 0x56, 0x01);
+  }
+
+  /** Selipkan byte mentah yang sudah jadi (mis. raster bitmap) tanpa lewat encoding teks. */
+  raw(values: Uint8Array | number[]): this {
+    this.bytes.push(...Array.from(values));
+    return this;
   }
 
   build(): Uint8Array {
@@ -159,6 +167,143 @@ export function buildReceiptBytes(data: ReceiptData, width = 32): Uint8Array {
   b.hr(width);
   b.alignCenter().line('Terima kasih!').feed(3).cut();
 
+  return b.build();
+}
+
+export interface ProductLabelData {
+  name: string;
+  sku: string;
+  price: number;
+}
+
+/**
+ * Lebar cetak dalam dot — printer thermal 58-60mm generik yang ditarget di
+ * sini biasanya fisik 384 dot @ 203dpi (dipakai juga sebagai basis "32
+ * karakter/baris" di `buildReceiptBytes`, 384/12≈32).
+ */
+const LABEL_WIDTH_DOTS = 384;
+const LABEL_HEIGHT_DOTS = 168;
+const QR_SIZE_DOTS = 148;
+
+function qrPayload(data: ProductLabelData): string {
+  return `${data.sku}\n${data.name}\nRp ${formatNumber(data.price)}`;
+}
+
+/** Pecah teks berdasarkan lebar PIKSEL aktual (bukan jumlah karakter) — perlu untuk layout kanvas, beda dari `twoCol` yang berbasis karakter untuk mode teks murni. */
+function wrapCanvasText(ctx: CanvasRenderingContext2D, value: string, maxWidthPx: number): string[] {
+  const lines: string[] = [];
+  let current = '';
+  for (const word of value.split(' ')) {
+    const next = current ? `${current} ${word}` : word;
+    if (ctx.measureText(next).width > maxWidthPx && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+/**
+ * Render label (QR di kiri + nama/SKU/harga di kanan) ke `<canvas>` — QR
+ * digambar sebagai bitmap bareng teksnya di kanvas yang sama (bukan lewat
+ * command QR bawaan printer, `GS ( k`) supaya layout "QR di samping teks"
+ * bisa dikontrol persis, dan supaya tidak bergantung pada printer BLE
+ * generik punya firmware QR atau tidak — cetak bitmap polos (`GS v 0`) jauh
+ * lebih universal didukung.
+ */
+async function renderProductLabelCanvas(data: ProductLabelData): Promise<HTMLCanvasElement> {
+  const canvas = document.createElement('canvas');
+  canvas.width = LABEL_WIDTH_DOTS;
+  canvas.height = LABEL_HEIGHT_DOTS;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Browser ini tidak mendukung canvas 2D — tidak bisa membuat label');
+
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#000';
+
+  const qrMargin = 10;
+  const qrCanvas = document.createElement('canvas');
+  await QRCode.toCanvas(qrCanvas, qrPayload(data), { width: QR_SIZE_DOTS, margin: 0, color: { dark: '#000', light: '#fff' } });
+  ctx.drawImage(qrCanvas, qrMargin, (canvas.height - QR_SIZE_DOTS) / 2);
+
+  const textX = qrMargin + QR_SIZE_DOTS + 16;
+  const maxTextWidth = canvas.width - textX - 8;
+
+  ctx.textBaseline = 'top';
+  let y = 12;
+
+  ctx.font = 'bold 24px sans-serif';
+  const nameLines = wrapCanvasText(ctx, data.name, maxTextWidth).slice(0, 3);
+  for (const line of nameLines) {
+    ctx.fillText(line, textX, y, maxTextWidth);
+    y += 28;
+  }
+
+  y += 6;
+  ctx.font = '20px sans-serif';
+  ctx.fillText(`SKU: ${data.sku}`, textX, y, maxTextWidth);
+  y += 32;
+
+  ctx.font = 'bold 28px sans-serif';
+  ctx.fillText(`Rp ${formatNumber(data.price)}`, textX, y, maxTextWidth);
+
+  return canvas;
+}
+
+/** Konversi kanvas jadi bitmap monokrom 1-bit format `GS v 0` (print raster bit image) — 1 = hitam. */
+function canvasToRasterCommand(canvas: HTMLCanvasElement): Uint8Array {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Browser ini tidak mendukung canvas 2D — tidak bisa membuat label');
+
+  const { width, height } = canvas;
+  const { data: pixels } = ctx.getImageData(0, 0, width, height);
+  const widthBytes = Math.ceil(width / 8);
+  const raster = new Uint8Array(widthBytes * height);
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 4;
+      const alpha = pixels[i + 3];
+      const luminance = (pixels[i] * 299 + pixels[i + 1] * 587 + pixels[i + 2] * 114) / 1000;
+      if (alpha > 0 && luminance < 128) {
+        raster[y * widthBytes + (x >> 3)] |= 0x80 >> (x % 8);
+      }
+    }
+  }
+
+  const header = [
+    GS,
+    0x76,
+    0x30,
+    0x00, // m = 0 (normal size)
+    widthBytes & 0xff,
+    (widthBytes >> 8) & 0xff,
+    height & 0xff,
+    (height >> 8) & 0xff,
+  ];
+  return new Uint8Array([...header, ...raster]);
+}
+
+/**
+ * Bangun byte ESC/POS untuk `copies` label harga barang sekaligus (satu sesi
+ * Bluetooth, tidak perlu pilih device berkali-kali) — tiap label berisi QR
+ * (isi: SKU, nama, harga) di kiri, teks nama/SKU/harga di kanan, dicetak
+ * sebagai satu bitmap (`GS v 0`) supaya layout sisi-bersisinya persis
+ * seperti dirender, lalu potong (`GS V 1`) di antara tiap label.
+ */
+export async function buildProductLabelBytes(data: ProductLabelData, copies = 1): Promise<Uint8Array> {
+  const canvas = await renderProductLabelCanvas(data);
+  const raster = canvasToRasterCommand(canvas);
+
+  const b = new ReceiptBuilder();
+  b.init();
+  for (let i = 0; i < Math.max(1, copies); i += 1) {
+    b.raw(raster).feed(2).cut();
+  }
   return b.build();
 }
 
