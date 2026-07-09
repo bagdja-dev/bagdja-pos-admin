@@ -108,6 +108,91 @@ const features = [
   },
 ];
 
+const pricingPlans = [
+  {
+    name: 'FREE',
+    badge: 'Aktif Sekarang',
+    price: 'Rp 0',
+    period: 'selamanya (selama masa beta)',
+    highlight: true,
+    features: [
+      'Akses penuh semua fitur premium',
+      'Tanpa batas transaksi',
+      'Tanpa batas cabang & bisnis (selama masa beta)',
+    ],
+    cta: 'Mulai Gratis Sekarang',
+  },
+  {
+    name: 'SILVER',
+    badge: 'Mulai Januari 2027',
+    price: 'Rp 49.000',
+    period: '/ bulan',
+    priceNote: 'atau Rp 490.000 / tahun',
+    highlight: false,
+    features: [
+      '1 Bisnis + 5 Cabang/Gudang',
+      '+Rp 10.000/bln per cabang tambahan (tahunan: +Rp 100.000)',
+    ],
+    cta: 'Daftar Gratis Dulu',
+  },
+  {
+    name: 'GOLD',
+    badge: 'Mulai Januari 2027',
+    price: 'Rp 99.000',
+    period: '/ bulan',
+    priceNote: 'atau Rp 990.000 / tahun',
+    highlight: false,
+    features: [
+      '3 Bisnis + 5 Cabang per Bisnis',
+      '+Rp 10.000/bln per cabang tambahan (tahunan: +Rp 100.000)',
+      '+Rp 35.000/bln per bisnis tambahan, maks. 5 bisnis tambahan (tahunan: +Rp 350.000)',
+    ],
+    cta: 'Daftar Gratis Dulu',
+  },
+];
+
+const contacts = [
+  {
+    label: 'Telepon / WhatsApp',
+    value: '+62 854-8844-8686',
+    href: 'https://wa.me/6285488448686',
+    cta: 'Chat via WhatsApp',
+    gradient: 'from-emerald-500 to-teal-400',
+    bg: 'bg-emerald-50',
+    icon: (
+      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Email',
+    value: 'pos@bagdja.com',
+    href: 'mailto:pos@bagdja.com',
+    cta: 'Kirim Email',
+    gradient: 'from-violet-500 to-purple-400',
+    bg: 'bg-violet-50',
+    icon: (
+      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Email Alternatif',
+    value: 'bagdja.dev@gmail.com',
+    href: 'mailto:bagdja.dev@gmail.com',
+    cta: 'Kirim Email',
+    gradient: 'from-blue-500 to-cyan-400',
+    bg: 'bg-blue-50',
+    icon: (
+      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+      </svg>
+    ),
+  },
+];
+
 const stats = [
   { value: '5 Jenis', label: 'Faktur: Jual/Beli/Mutasi/Modal/Penarikan' },
   { value: 'Tanpa Batas', label: 'Cabang & Gudang' },
@@ -529,6 +614,91 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── Pricing ────────────────────────────────────── */}
+      <section id="pricing" className="scroll-mt-20 bg-gradient-to-b from-white to-gray-50 px-4 py-20 sm:py-28">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-4 text-center">
+            <span className="mb-4 inline-block rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-700">
+              Harga
+            </span>
+            <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
+              Harga Transparan, Tanpa Biaya Tersembunyi
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-500">
+              Nikmati seluruh fitur premium Bagdja POS secara <strong className="text-gray-700">GRATIS</strong>{' '}
+              selama masa pengembangan hingga Desember 2026.
+            </p>
+          </div>
+
+          <div className="mb-12 flex justify-center">
+            <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-purple-500 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-violet-500/25">
+              🎉 Masa Beta: Gratis 100%
+            </span>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {pricingPlans.map((plan) => (
+              <div
+                key={plan.name}
+                className={`relative rounded-2xl border p-6 ${
+                  plan.highlight
+                    ? 'border-violet-500 bg-white shadow-xl shadow-violet-500/10 ring-1 ring-violet-500'
+                    : 'border-gray-100 bg-white shadow-sm'
+                }`}
+              >
+                <span
+                  className={`mb-4 inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${
+                    plan.highlight ? 'bg-violet-100 text-violet-700' : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  {plan.badge}
+                </span>
+                <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
+                <div className="mt-2 flex items-baseline gap-1">
+                  <span className="text-3xl font-extrabold text-gray-900">{plan.price}</span>
+                  {plan.period && <span className="text-sm font-medium text-gray-500">{plan.period}</span>}
+                </div>
+                {plan.priceNote && <p className="mt-1 text-xs text-gray-400">{plan.priceNote}</p>}
+
+                <ul className="mt-6 space-y-3 text-sm text-gray-600">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2">
+                      <svg
+                        className={`mt-0.5 h-5 w-5 flex-shrink-0 ${plan.highlight ? 'text-violet-500' : 'text-gray-400'}`}
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
+                      </svg>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  as={Link}
+                  href="/auth/login"
+                  fullWidth
+                  className={`mt-8 font-semibold ${
+                    plan.highlight
+                      ? 'bg-gradient-to-r from-violet-600 to-purple-500 text-white shadow-lg shadow-violet-500/25'
+                      : 'border border-gray-300 bg-white text-gray-700'
+                  }`}
+                  variant={plan.highlight ? 'solid' : 'bordered'}
+                >
+                  {plan.cta}
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          <p className="mx-auto mt-8 max-w-2xl text-center text-xs text-gray-400">
+            *Harga paket berbayar berlaku setelah masa beta berakhir dan payment gateway resmi aktif. Angka di
+            atas adalah rencana harga dan dapat berubah sebelum diluncurkan.
+          </p>
+        </div>
+      </section>
+
       {/* ─── CTA ────────────────────────────────────────── */}
       <section className="px-4 py-20 sm:py-28">
         <div className="relative mx-auto max-w-4xl overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-purple-700 to-blue-600 px-6 py-16 text-center sm:px-16 sm:py-20">
@@ -571,6 +741,42 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── Kontak ─────────────────────────────────────── */}
+      <section id="contact" className="scroll-mt-20 px-4 py-20 sm:py-28">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-14 text-center">
+            <span className="mb-4 inline-block rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-700">
+              Kontak
+            </span>
+            <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
+              Ada Pertanyaan? Hubungi Kami
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-lg text-gray-500">
+              Via WhatsApp untuk respon cepat, atau email untuk pertanyaan yang lebih detail.
+            </p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {contacts.map((c) => (
+              <a
+                key={c.value}
+                href={c.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="feature-card group rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm"
+              >
+                <div className={`mx-auto mb-4 inline-flex rounded-xl ${c.bg} p-3`}>
+                  <div className={`bg-gradient-to-br ${c.gradient} bg-clip-text text-transparent`}>{c.icon}</div>
+                </div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{c.label}</p>
+                <p className="mt-1 text-lg font-bold text-gray-900">{c.value}</p>
+                <p className="mt-3 text-sm font-semibold text-violet-600">{c.cta} →</p>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ─── Footer ─────────────────────────────────────── */}
       <footer className="border-t border-gray-100 bg-gray-50 px-4 py-12">
         <div className="mx-auto max-w-6xl">
@@ -584,7 +790,7 @@ export default function LandingPage() {
             <div className="flex gap-8 text-sm text-gray-500">
               <Link href="#" className="transition-colors hover:text-gray-900">Kebijakan Privasi</Link>
               <Link href="#" className="transition-colors hover:text-gray-900">Syarat & Ketentuan</Link>
-              <Link href="#" className="transition-colors hover:text-gray-900">Kontak</Link>
+              <Link href="#contact" className="transition-colors hover:text-gray-900">Kontak</Link>
             </div>
           </div>
           <div className="mt-8 border-t border-gray-200 pt-6 text-center">
