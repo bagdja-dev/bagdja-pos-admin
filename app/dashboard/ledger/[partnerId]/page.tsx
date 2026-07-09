@@ -78,7 +78,14 @@ export default function LedgerPartnerDetailPage() {
     {
       key: 'entry_type',
       label: 'Tipe',
-      render: (v) => (v === 'invoice_issued' ? 'Tagihan' : 'Pembayaran'),
+      render: (v) =>
+        v === 'invoice_issued'
+          ? 'Tagihan'
+          : v === 'adjustment'
+            ? 'Penyesuaian (Non-Tunai)'
+            : v === 'charge'
+              ? 'Bunga'
+              : 'Pembayaran',
     },
     { key: 'payment_method', label: 'Metode', render: (v) => v ?? '—' },
     { key: 'debit', label: 'Debit', sortable: true, render: (v) => formatCurrency(v) },
@@ -92,7 +99,7 @@ export default function LedgerPartnerDetailPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">{partner.name}</h1>
           <p className="text-sm text-default-500">
-            {partner.type === 'supplier' ? 'Supplier' : 'Pelanggan'}
+            {partner.type === 'supplier' ? 'Supplier' : partner.type === 'lender' ? 'Pemberi Modal' : 'Pelanggan'}
             {partner.phone ? ` · ${partner.phone}` : ''}
             {partner.plate_number ? ` · ${partner.plate_number}` : ''}
           </p>

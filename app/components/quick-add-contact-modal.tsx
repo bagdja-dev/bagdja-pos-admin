@@ -7,6 +7,12 @@ import { AppModal } from './app-modal';
 import { apiClient, ApiError } from '../lib/api-client';
 import type { PosContact, PosContactType } from '../lib/types';
 
+const CONTACT_TYPE_LABELS: Record<PosContactType, string> = {
+  customer: 'Pelanggan',
+  supplier: 'Supplier',
+  lender: 'Pemberi Modal',
+};
+
 interface QuickAddContactModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -60,7 +66,7 @@ export function QuickAddContactModal({ isOpen, onClose, businessId, type, initia
     <AppModal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Tambah ${type === 'customer' ? 'Pelanggan' : 'Supplier'} Baru`}
+      title={`Tambah ${CONTACT_TYPE_LABELS[type]} Baru`}
       footer={
         <>
           <Button variant="flat" onPress={onClose}>

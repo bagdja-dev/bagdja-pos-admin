@@ -15,6 +15,12 @@ import { hasMinRole, type GridResult, type PosContact, type PosContactType } fro
 
 const EMPTY_FORM = { type: 'customer' as PosContactType, name: '', phone: '', plate_number: '' };
 
+const CONTACT_TYPE_LABELS: Record<PosContactType, string> = {
+  customer: 'Pelanggan',
+  supplier: 'Supplier',
+  lender: 'Pemberi Modal',
+};
+
 export default function ContactsPage() {
   const { businessId, role, loading: businessLoading } = useBusinessContext();
   const [modalOpen, setModalOpen] = useState(false);
@@ -92,7 +98,7 @@ export default function ContactsPage() {
 
   const columns: GridColumn<PosContact>[] = [
     { key: 'name', label: 'Nama', sortable: true },
-    { key: 'type', label: 'Tipe', sortable: true, render: (v) => (v === 'customer' ? 'Pelanggan' : 'Supplier') },
+    { key: 'type', label: 'Tipe', sortable: true, render: (v: PosContactType) => CONTACT_TYPE_LABELS[v] },
     { key: 'phone', label: 'Telepon', render: (v) => v ?? '—' },
     { key: 'plate_number', label: 'Plat Nomor', render: (v) => v ?? '—' },
     ...(canEdit
@@ -122,7 +128,7 @@ export default function ContactsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Kontak</h1>
-          <p className="text-sm text-default-500">Pelanggan & supplier.</p>
+          <p className="text-sm text-default-500">Pelanggan, supplier, & pemberi modal.</p>
         </div>
         {canEdit && (
           <Button color="primary" onPress={openCreate}>
@@ -142,6 +148,7 @@ export default function ContactsPage() {
             options: [
               { label: 'Pelanggan', value: 'customer' },
               { label: 'Supplier', value: 'supplier' },
+              { label: 'Pemberi Modal', value: 'lender' },
             ],
           },
         ]}
@@ -175,6 +182,7 @@ export default function ContactsPage() {
             >
               <SelectItem key="customer">Pelanggan</SelectItem>
               <SelectItem key="supplier">Supplier</SelectItem>
+              <SelectItem key="lender">Pemberi Modal</SelectItem>
             </Select>
           )}
           <Input

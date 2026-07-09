@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Select, SelectItem } from '@heroui/react';
+import { Button, Select, SelectItem, Textarea } from '@heroui/react';
 
 import { AsyncSearchSelect, type AsyncOption } from '../../../components/async-search-select';
+import { CurrencyInput } from '../../../components/currency-input';
 import { EMPTY_ITEM_ROW, ItemRowsEditor, calcGrandTotal, formatCurrency, type ItemRow } from '../../../components/invoice-item-rows';
 import { ServiceRowsEditor, calcServiceTotal, type ServiceRow } from '../../../components/invoice-service-rows';
 import { LoadingSpinner } from '../../../components/loading-spinner';
@@ -25,6 +26,24 @@ import {
   type ServiceItem,
 } from '../../../lib/types';
 
+const PARTY_FIELD: Record<PosInvoiceType, { label: string; placeholder: string; contactType?: PosContactType }> = {
+  sale: { label: 'Pelanggan', placeholder: 'Cari pelanggan...', contactType: 'customer' },
+  purchase: { label: 'Supplier', placeholder: 'Cari supplier...', contactType: 'supplier' },
+  transfer: { label: 'Lokasi Tujuan', placeholder: 'Cari lokasi tujuan...' },
+  capital: { label: 'Pemberi Modal', placeholder: 'Cari pemberi modal...', contactType: 'lender' },
+  withdrawal: { label: 'Diambil Oleh', placeholder: 'Cari pemilik/investor...', contactType: 'lender' },
+};
+
+const AMOUNT_LABEL: Partial<Record<PosInvoiceType, string>> = {
+  capital: 'Jumlah Modal',
+  withdrawal: 'Jumlah Penarikan',
+};
+
+/** Faktur `capital`/`withdrawal` sama-sama tanpa barang/jasa — nominalnya langsung dari input `amount`. */
+function isAmountBasedType(type: PosInvoiceType): boolean {
+  return type === 'capital' || type === 'withdrawal';
+}
+
 export default function NewInvoicePage() {
   const router = useRouter();
   const { businessId, loading: businessLoading } = useBusinessContext();
@@ -36,6 +55,8 @@ export default function NewInvoicePage() {
   const [partyLabel, setPartyLabel] = useState('');
   const [items, setItems] = useState<ItemRow[]>([{ ...EMPTY_ITEM_ROW }]);
   const [services, setServices] = useState<ServiceRow[]>([]);
+  const [amount, setAmount] = useState('0');
+  const [note, setNote] = useState('');
   const [staff, setStaff] = useState<PosStaff[]>([]);
 
   const [saving, setSaving] = useState(false);
@@ -45,7 +66,14 @@ export default function NewInvoicePage() {
   const [contactModalQuery, setContactModalQuery] = useState('');
   const hasAutoSelectedLocationRef = useRef(false);
 
-  const partyType: PosContactType | 'outlet' = type === 'sale' ? 'customer' : type === 'purchase' ? 'supplier' : 'outlet';
+  const partyType: PosContactType | 'outlet' =
+    type === 'sale'
+      ? 'customer'
+      : type === 'purchase'
+        ? 'supplier'
+        : type === 'capital' || type === 'withdrawal'
+          ? 'lender'
+          : 'outlet';
 
   useEffect(() => {
     if (!businessId) return;
@@ -135,19 +163,32 @@ export default function NewInvoicePage() {
     [businessId],
   );
 
-  const grandTotal = calcGrandTotal(items) + (type !== 'transfer' ? calcServiceTotal(services) : 0);
+  const grandTotal = isAmountBasedType(type)
+    ? Number(amount) || 0
+    : calcGrandTotal(items) + (type !== 'transfer' ? calcServiceTotal(services) : 0);
 
   async function handleSubmit() {
     if (!businessId || !locationId || !partyId) {
       setError('Lokasi dan pihak terkait wajib diisi');
       return;
     }
+
+    if (isAmountBasedType(type)) {
+      if (!Number(amount) || Number(amount) <= 0) {
+        setError(`${AMOUNT_LABEL[type]} wajib diisi (lebih dari 0)`);
+        return;
+      }
+    } else {
+      const validItemsCheck = items.filter((i) => i.product_id && Number(i.quantity) > 0);
+      const validServicesCheck = type !== 'transfer' ? services.filter((s) => s.label.trim() && Number(s.amount) > 0) : [];
+      if (validItemsCheck.length === 0 && validServicesCheck.length === 0) {
+        setError('Minimal ada satu produk atau satu jasa');
+        return;
+      }
+    }
+
     const validItems = items.filter((i) => i.product_id && Number(i.quantity) > 0);
     const validServices = type !== 'transfer' ? services.filter((s) => s.label.trim() && Number(s.amount) > 0) : [];
-    if (validItems.length === 0 && validServices.length === 0) {
-      setError('Minimal ada satu produk atau satu jasa');
-      return;
-    }
 
     setSaving(true);
     setError(null);
@@ -159,12 +200,15 @@ export default function NewInvoicePage() {
           location_id: locationId,
           party_type: partyType,
           party_id: partyId,
-          items: validItems.map((i) => ({
-            product_id: i.product_id,
-            quantity: Number(i.quantity),
-            ...(i.adjusted_price ? { adjusted_price: Number(i.adjusted_price) } : {}),
-          })),
-          ...(type !== 'transfer' && validServices.length > 0
+          items: isAmountBasedType(type)
+            ? []
+            : validItems.map((i) => ({
+                product_id: i.product_id,
+                quantity: Number(i.quantity),
+                ...(i.adjusted_price ? { adjusted_price: Number(i.adjusted_price) } : {}),
+              })),
+          ...(isAmountBasedType(type) ? { amount: Number(amount) } : {}),
+          ...(type !== 'transfer' && !isAmountBasedType(type) && validServices.length > 0
             ? {
                 services: validServices.map((s) => ({
                   ...(s.service_id ? { service_id: s.service_id } : {}),
@@ -174,6 +218,7 @@ export default function NewInvoicePage() {
                 })),
               }
             : {}),
+          ...(note.trim() ? { note: note.trim() } : {}),
         }),
       });
       router.push(`/dashboard/invoices/${invoice.id}`);
@@ -210,6 +255,8 @@ export default function NewInvoicePage() {
           <SelectItem key="sale">Penjualan</SelectItem>
           <SelectItem key="purchase">Pembelian</SelectItem>
           <SelectItem key="transfer">Mutasi Antar Lokasi</SelectItem>
+          <SelectItem key="capital">Modal</SelectItem>
+          <SelectItem key="withdrawal">Penarikan</SelectItem>
         </Select>
 
         <AsyncSearchSelect
@@ -226,8 +273,8 @@ export default function NewInvoicePage() {
         />
 
         <AsyncSearchSelect
-          label={type === 'sale' ? 'Pelanggan' : type === 'purchase' ? 'Supplier' : 'Lokasi Tujuan'}
-          placeholder={type === 'sale' ? 'Cari pelanggan...' : type === 'purchase' ? 'Cari supplier...' : 'Cari lokasi tujuan...'}
+          label={PARTY_FIELD[type].label}
+          placeholder={PARTY_FIELD[type].placeholder}
           selectedId={partyId}
           selectedLabel={partyLabel}
           onSelect={(id, label) => {
@@ -236,29 +283,42 @@ export default function NewInvoicePage() {
           }}
           fetchOptions={fetchPartyOptions}
           onCreateNew={
-            type !== 'transfer'
+            PARTY_FIELD[type].contactType
               ? (query) => {
                   setContactModalQuery(query);
                   setContactModalOpen(true);
                 }
               : undefined
           }
-          createNewLabel={(q) => `Tambah "${q}" sebagai ${type === 'sale' ? 'pelanggan' : 'supplier'} baru`}
+          createNewLabel={(q) => `Tambah "${q}" sebagai ${PARTY_FIELD[type].label.toLowerCase()} baru`}
           isRequired
         />
       </div>
 
-      <ItemRowsEditor items={items} onChange={setItems} invoiceType={type} fetchProductOptions={fetchProductOptions} />
+      {isAmountBasedType(type) ? (
+        <CurrencyInput label={AMOUNT_LABEL[type]} value={amount} onValueChange={setAmount} isRequired />
+      ) : (
+        <>
+          <ItemRowsEditor items={items} onChange={setItems} invoiceType={type} fetchProductOptions={fetchProductOptions} />
 
-      {type !== 'transfer' && (
-        <ServiceRowsEditor
-          rows={services}
-          onChange={setServices}
-          mechanics={staff}
-          fetchServiceOptions={fetchServiceOptions}
-          businessId={businessId}
-        />
+          {type !== 'transfer' && (
+            <ServiceRowsEditor
+              rows={services}
+              onChange={setServices}
+              mechanics={staff}
+              fetchServiceOptions={fetchServiceOptions}
+              businessId={businessId}
+            />
+          )}
+        </>
       )}
+
+      <Textarea
+        label="Catatan (opsional)"
+        placeholder="Catatan tambahan untuk faktur ini..."
+        value={note}
+        onValueChange={setNote}
+      />
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
@@ -266,12 +326,12 @@ export default function NewInvoicePage() {
         Simpan sebagai Draft
       </Button>
 
-      {businessId && type !== 'transfer' && (
+      {businessId && PARTY_FIELD[type].contactType && (
         <QuickAddContactModal
           isOpen={contactModalOpen}
           onClose={() => setContactModalOpen(false)}
           businessId={businessId}
-          type={type === 'sale' ? 'customer' : 'supplier'}
+          type={PARTY_FIELD[type].contactType!}
           initialName={contactModalQuery}
           onCreated={(contact) => {
             setPartyId(contact.id);

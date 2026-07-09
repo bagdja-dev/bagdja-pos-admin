@@ -55,7 +55,8 @@ export default function LedgerPage() {
     {
       key: 'type',
       label: 'Tipe',
-      render: (_v, row) => (row.partner?.type === 'supplier' ? 'Supplier' : 'Pelanggan'),
+      render: (_v, row) =>
+        row.partner?.type === 'supplier' ? 'Supplier' : row.partner?.type === 'lender' ? 'Pemberi Modal' : 'Pelanggan',
     },
     { key: 'totalDebit', label: 'Total Debit', sortable: true, render: (v) => formatCurrency(v) },
     { key: 'totalKredit', label: 'Total Kredit', sortable: true, render: (v) => formatCurrency(v) },
@@ -92,6 +93,7 @@ export default function LedgerPage() {
             options: [
               { label: 'Pelanggan', value: 'customer' },
               { label: 'Supplier', value: 'supplier' },
+              { label: 'Pemberi Modal', value: 'lender' },
             ],
           },
         ]}

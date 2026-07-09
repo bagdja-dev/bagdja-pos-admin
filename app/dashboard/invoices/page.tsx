@@ -146,6 +146,8 @@ export default function InvoicesPage() {
               { label: 'Penjualan', value: 'sale' },
               { label: 'Pembelian', value: 'purchase' },
               { label: 'Mutasi', value: 'transfer' },
+              { label: 'Modal', value: 'capital' },
+              { label: 'Penarikan', value: 'withdrawal' },
             ],
           },
           {

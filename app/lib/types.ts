@@ -97,7 +97,7 @@ export interface PosStaffInvitation {
   emailSent?: boolean;
 }
 
-export type PosContactType = 'customer' | 'supplier';
+export type PosContactType = 'customer' | 'supplier' | 'lender';
 
 export interface PosContact {
   id: string;
@@ -156,9 +156,9 @@ export interface ProductStockDistribution {
   total: number;
 }
 
-export type PosInvoiceType = 'sale' | 'purchase' | 'transfer';
+export type PosInvoiceType = 'sale' | 'purchase' | 'transfer' | 'capital' | 'withdrawal';
 export type PosInvoiceFlow = 'in' | 'out';
-export type PosInvoicePartyType = 'customer' | 'supplier' | 'outlet';
+export type PosInvoicePartyType = 'customer' | 'supplier' | 'outlet' | 'lender';
 export type PosInvoiceStatus = 'draft' | 'submitted' | 'settled' | 'void';
 export type PosInvoicePaymentStatus = 'not_applicable' | 'unpaid' | 'partial' | 'paid';
 
@@ -166,6 +166,8 @@ export const INVOICE_TYPE_LABELS: Record<PosInvoiceType, string> = {
   sale: 'Penjualan',
   purchase: 'Pembelian',
   transfer: 'Mutasi',
+  capital: 'Modal',
+  withdrawal: 'Penarikan',
 };
 
 export const INVOICE_STATUS_LABELS: Record<PosInvoiceStatus, string> = {
@@ -221,6 +223,8 @@ export interface PosInvoice {
   subtotal: string;
   service_total: string;
   grand_total: string;
+  /** Catatan tambahan bebas — opsional, tidak dipakai untuk logika apa pun. */
+  note: string | null;
   submitted_at: string | null;
   settled_at: string | null;
   created_at: string;
@@ -247,7 +251,7 @@ export interface PosPaymentLedger {
   invoice_id: string;
   invoice?: PosInvoice;
   partner_id: string;
-  entry_type: 'invoice_issued' | 'payment' | 'adjustment';
+  entry_type: 'invoice_issued' | 'payment' | 'adjustment' | 'charge';
   payment_method: PosPaymentMethod | null;
   proof_photo_url: string | null;
   debit: string;

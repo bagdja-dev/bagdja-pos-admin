@@ -32,9 +32,20 @@ import {
   INVOICE_TYPE_LABELS,
   PAYMENT_STATUS_LABELS,
   type PosInvoice,
+  type PosInvoiceType,
   type PosPaymentLedger,
   type PosPaymentMethod,
 } from '../../../lib/types';
+
+const AMOUNT_LABEL: Partial<Record<PosInvoiceType, string>> = {
+  capital: 'Jumlah Modal',
+  withdrawal: 'Jumlah Penarikan',
+};
+
+/** Faktur `capital`/`withdrawal` sama-sama tanpa barang/jasa — nominalnya langsung dari `amount`. */
+function isAmountBasedType(type: PosInvoiceType): boolean {
+  return type === 'capital' || type === 'withdrawal';
+}
 
 function formatCurrency(value: string) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
@@ -69,6 +80,14 @@ export default function InvoiceDetailPage() {
 
   const [nonCashModalOpen, setNonCashModalOpen] = useState(false);
   const [nonCashNote, setNonCashNote] = useState('');
+
+  const [chargeModalOpen, setChargeModalOpen] = useState(false);
+  const [chargeForm, setChargeForm] = useState({
+    payment_method: 'cash' as PosPaymentMethod,
+    amount: '',
+    proof_photo_url: '',
+    note: '',
+  });
 
   const load = useCallback(async () => {
     if (!businessId || !params.id) return;
@@ -188,6 +207,30 @@ export default function InvoiceDetailPage() {
     }
   }
 
+  async function handleRecordCharge() {
+    if (!businessId || !invoice) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await apiClient(`/api/businesses/${businessId}/invoices/${invoice.id}/interest`, {
+        method: 'POST',
+        body: JSON.stringify({
+          payment_method: chargeForm.payment_method,
+          amount: Number(chargeForm.amount),
+          ...(chargeForm.proof_photo_url ? { proof_photo_url: chargeForm.proof_photo_url } : {}),
+          ...(chargeForm.note ? { note: chargeForm.note } : {}),
+        }),
+      });
+      setChargeModalOpen(false);
+      setChargeForm({ payment_method: 'cash', amount: '', proof_photo_url: '', note: '' });
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Gagal mencatat bunga');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleReturn() {
     if (!businessId || !invoice) return;
     setBusy(true);
@@ -223,7 +266,11 @@ export default function InvoiceDetailPage() {
   const canPay = invoice.type !== 'transfer' && invoice.status === 'submitted' && invoice.payment_status !== 'paid';
   const canSettle = invoice.type === 'transfer' && invoice.flow === 'in' && invoice.status === 'submitted';
   const canReturn =
-    invoice.type !== 'transfer' && (invoice.status === 'submitted' || invoice.status === 'settled') && !invoice.ref_invoice_id;
+    invoice.type !== 'transfer' &&
+    !isAmountBasedType(invoice.type) &&
+    (invoice.status === 'submitted' || invoice.status === 'settled') &&
+    !invoice.ref_invoice_id;
+  const canCharge = invoice.type === 'capital' && invoice.status === 'submitted';
 
   return (
     <div className="space-y-6">
@@ -257,10 +304,27 @@ export default function InvoiceDetailPage() {
           value={invoice.location?.name ?? ''}
         />
         <ReadOnlyField
-          label={invoice.type === 'sale' ? 'Pelanggan' : invoice.type === 'purchase' ? 'Supplier' : 'Lokasi Tujuan'}
+          label={
+            invoice.type === 'sale'
+              ? 'Pelanggan'
+              : invoice.type === 'purchase'
+                ? 'Supplier'
+                : invoice.type === 'capital'
+                  ? 'Pemberi Modal'
+                  : invoice.type === 'withdrawal'
+                    ? 'Diambil Oleh'
+                    : 'Lokasi Tujuan'
+          }
           value={invoice.party?.name ?? ''}
         />
       </div>
+
+      {invoice.note && (
+        <div className="rounded-xl border border-default-200 bg-default-100 px-4 py-2.5">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Catatan</p>
+          <p className="whitespace-pre-wrap text-sm text-foreground">{invoice.note}</p>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {invoice.status === 'draft' && (
@@ -291,6 +355,11 @@ export default function InvoiceDetailPage() {
             Settlement (Terima Barang)
           </Button>
         )}
+        {canCharge && (
+          <Button variant="flat" onPress={() => setChargeModalOpen(true)}>
+            Catat Bunga
+          </Button>
+        )}
         {canReturn && (
           <Button variant="flat" onPress={() => setReturnModalOpen(true)}>
             Buat Retur
@@ -307,29 +376,31 @@ export default function InvoiceDetailPage() {
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <div>
-        <h2 className="mb-2 text-lg font-semibold text-foreground">Barang</h2>
-        <Table aria-label="Item faktur">
-          <TableHeader>
-            <TableColumn>PRODUK</TableColumn>
-            <TableColumn>QTY</TableColumn>
-            <TableColumn>DITERIMA</TableColumn>
-            <TableColumn>HARGA</TableColumn>
-            <TableColumn>SUBTOTAL</TableColumn>
-          </TableHeader>
-          <TableBody emptyContent="Tidak ada item">
-            {(invoice.items ?? []).map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>{item.product?.name ?? item.product_id}</TableCell>
-                <TableCell>{item.quantity}</TableCell>
-                <TableCell>{item.quantity_received ?? '—'}</TableCell>
-                <TableCell>{formatCurrency(item.adjusted_price)}</TableCell>
-                <TableCell>{formatCurrency(item.subtotal)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      {!isAmountBasedType(invoice.type) && (
+        <div>
+          <h2 className="mb-2 text-lg font-semibold text-foreground">Barang</h2>
+          <Table aria-label="Item faktur">
+            <TableHeader>
+              <TableColumn>PRODUK</TableColumn>
+              <TableColumn>QTY</TableColumn>
+              <TableColumn>DITERIMA</TableColumn>
+              <TableColumn>HARGA</TableColumn>
+              <TableColumn>SUBTOTAL</TableColumn>
+            </TableHeader>
+            <TableBody emptyContent="Tidak ada item">
+              {(invoice.items ?? []).map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>{item.product?.name ?? item.product_id}</TableCell>
+                  <TableCell>{item.quantity}</TableCell>
+                  <TableCell>{item.quantity_received ?? '—'}</TableCell>
+                  <TableCell>{formatCurrency(item.adjusted_price)}</TableCell>
+                  <TableCell>{formatCurrency(item.subtotal)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {invoice.type !== 'transfer' && (invoice.services?.length ?? 0) > 0 && (
         <div>
@@ -354,13 +425,15 @@ export default function InvoiceDetailPage() {
       <div className="flex justify-end">
         <div className="w-64 space-y-1 text-sm">
           <div className="flex justify-between">
-            <span className="text-default-500">Subtotal</span>
+            <span className="text-default-500">{AMOUNT_LABEL[invoice.type] ?? 'Subtotal'}</span>
             <span>{formatCurrency(invoice.subtotal)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-default-500">Jasa</span>
-            <span>{formatCurrency(invoice.service_total)}</span>
-          </div>
+          {!isAmountBasedType(invoice.type) && (
+            <div className="flex justify-between">
+              <span className="text-default-500">Jasa</span>
+              <span>{formatCurrency(invoice.service_total)}</span>
+            </div>
+          )}
           <div className="flex justify-between font-semibold">
             <span>Grand Total</span>
             <span>{formatCurrency(invoice.grand_total)}</span>
@@ -393,7 +466,9 @@ export default function InvoiceDetailPage() {
                       ? 'Tagihan'
                       : e.entry_type === 'adjustment'
                         ? 'Penyesuaian (Non-Tunai)'
-                        : 'Pembayaran'}
+                        : e.entry_type === 'charge'
+                          ? 'Bunga'
+                          : 'Pembayaran'}
                   </TableCell>
                   <TableCell>{e.payment_method ?? '—'}</TableCell>
                   <TableCell>{formatCurrency(e.debit)}</TableCell>
@@ -479,6 +554,58 @@ export default function InvoiceDetailPage() {
             value={paymentForm.note}
             onValueChange={(v) => setPaymentForm((f) => ({ ...f, note: v }))}
           />
+        </div>
+      </AppModal>
+
+      {/* Modal: Catat Bunga */}
+      <AppModal
+        isOpen={chargeModalOpen}
+        onClose={() => setChargeModalOpen(false)}
+        title="Catat Bunga"
+        footer={
+          <>
+            <Button variant="flat" onPress={() => setChargeModalOpen(false)}>
+              Batal
+            </Button>
+            <Button color="primary" isLoading={busy} onPress={handleRecordCharge}>
+              Simpan
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-default-500">
+            Kas keluar untuk bunga pinjaman — sisa pokok modal (di atas) TIDAK berkurang oleh pembayaran ini.
+          </p>
+          <Select
+            label="Metode"
+            selectedKeys={[chargeForm.payment_method]}
+            onSelectionChange={(keys) =>
+              setChargeForm((f) => ({ ...f, payment_method: Array.from(keys)[0] as PosPaymentMethod }))
+            }
+          >
+            <SelectItem key="cash">Cash</SelectItem>
+            <SelectItem key="transfer">Transfer</SelectItem>
+          </Select>
+          <CurrencyInput
+            label="Jumlah Bunga"
+            value={chargeForm.amount}
+            onValueChange={(v) => setChargeForm((f) => ({ ...f, amount: v }))}
+            isRequired
+          />
+          {chargeForm.payment_method === 'transfer' && businessId && (
+            <PaymentProofUploader
+              businessId={businessId}
+              value={chargeForm.proof_photo_url}
+              onChange={(url) => setChargeForm((f) => ({ ...f, proof_photo_url: url }))}
+            />
+          )}
+          <Input
+            label="Catatan (opsional)"
+            value={chargeForm.note}
+            onValueChange={(v) => setChargeForm((f) => ({ ...f, note: v }))}
+          />
+          {error && <p className="text-sm text-danger">{error}</p>}
         </div>
       </AppModal>
 
