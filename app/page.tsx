@@ -170,6 +170,10 @@ export default function LandingPage() {
             untuk Bisnis Anda
           </h1>
 
+          <p className="mt-5 text-lg font-semibold italic text-violet-600 sm:text-xl">
+            &ldquo;Tumbuh Kembang Dengan Bagdja&rdquo;
+          </p>
+
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-gray-500 sm:text-xl">
             Ganti buku bon manual dengan sistem kasir digital. Kelola faktur jual-beli, mutasi stok
             antar cabang, dan kartu piutang-hutang dalam satu aplikasi — dirancang untuk bengkel
@@ -270,8 +274,72 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Cetak Label + QR */}
+          {/* Faktur Barang & Jasa */}
           <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+            <div>
+              <span className="mb-3 inline-block rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-700">
+                Faktur Barang & Jasa
+              </span>
+              <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+                Satu nota, campur barang dan jasa sekaligus
+              </h3>
+              <p className="mt-4 text-base leading-relaxed text-gray-500">
+                Faktur di Bagdja bukan cuma buat mencatat barang — biaya jasa/servis bisa
+                ditambahkan di baris yang sama seperti sparepart, lengkap dengan harganya
+                sendiri. Cocok untuk bengkel atau toko yang menjual barang sekaligus jasa
+                dalam satu transaksi ke pelanggan.
+              </p>
+              <ul className="mt-6 space-y-3 text-sm text-gray-600">
+                {[
+                  'Baris barang otomatis memotong stok, baris jasa tidak',
+                  'Harga jasa bisa disesuaikan langsung per faktur',
+                  'Cukup satu barang ATAU satu jasa untuk faktur tetap sah — bebas kombinasi',
+                ].map((point) => (
+                  <li key={point} className="flex items-start gap-2">
+                    <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-violet-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
+                    </svg>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex justify-center">
+              <div className="w-80 rounded-lg border border-gray-200 bg-white p-5 shadow-md">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Faktur Jual #JUAL-0231</p>
+                <div className="mt-3 space-y-2">
+                  {[
+                    { kind: 'BARANG', label: 'Oli Mesin 1L', price: 'Rp 45.000' },
+                    { kind: 'JASA', label: 'Ganti Oli & Servis', price: 'Rp 50.000' },
+                    { kind: 'BARANG', label: 'Filter Oli', price: 'Rp 25.000' },
+                  ].map((row) => (
+                    <div
+                      key={row.label}
+                      className={`flex items-center justify-between rounded-lg px-3 py-2 ${row.kind === 'BARANG' ? 'bg-amber-50' : 'bg-blue-50'}`}
+                    >
+                      <div>
+                        <span
+                          className={`mr-2 rounded px-1.5 py-0.5 text-[10px] font-bold ${row.kind === 'BARANG' ? 'bg-amber-200 text-amber-800' : 'bg-blue-200 text-blue-800'}`}
+                        >
+                          {row.kind}
+                        </span>
+                        <span className="text-xs font-medium text-gray-800">{row.label}</span>
+                      </div>
+                      <span className="text-xs font-semibold text-gray-700">{row.price}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex items-center justify-between border-t border-dashed border-gray-200 pt-3">
+                  <span className="text-xs font-bold text-gray-500">Total</span>
+                  <span className="text-base font-extrabold text-gray-900">Rp 120.000</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Cetak Label + QR */}
+          <div className="mt-24 grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
             <div>
               <span className="mb-3 inline-block rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-pink-700">
                 Cetak Label Barang
@@ -387,6 +455,24 @@ export default function LandingPage() {
               </ul>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ─── Roadmap ────────────────────────────────────── */}
+      <section className="px-4 py-16 sm:py-20">
+        <div className="mx-auto max-w-4xl rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-blue-50 px-6 py-12 text-center sm:px-12 sm:py-16">
+          <span className="mb-4 inline-block rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-700 shadow-sm">
+            Terus Berkembang
+          </span>
+          <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+            Fitur di atas cuma permulaan
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-gray-500 sm:text-lg">
+            Bagdja POS akan terus kami kembangkan berdasarkan kebutuhan nyata tenant yang sudah
+            pakai. Setelah bengkel dan toko retail, langkah berikutnya adalah merambah ke jenis
+            bisnis lain — dengan filosofi yang sama: alur kerja yang simpel, dan platform yang
+            tumbuh bersama bisnis Anda.
+          </p>
         </div>
       </section>
 
