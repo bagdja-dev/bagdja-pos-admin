@@ -4,8 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button, Textarea } from '@heroui/react';
 
-import { AsyncSearchSelect, type AsyncOption } from '../../../../components/async-search-select';
+import { AsyncSearchSelect, type PagedFetchResult } from '../../../../components/async-search-select';
 import { CurrencyInput } from '../../../../components/currency-input';
+import { LocationSelect } from '../../../../components/location-select';
 import { EMPTY_ITEM_ROW, ItemRowsEditor, calcGrandTotal, formatCurrency, type ItemRow } from '../../../../components/invoice-item-rows';
 import { ServiceRowsEditor, calcServiceTotal, type ServiceRow } from '../../../../components/invoice-service-rows';
 import { LoadingSpinner } from '../../../../components/loading-spinner';
@@ -16,13 +17,11 @@ import { apiClient, ApiError } from '../../../../lib/api-client';
 import { useBusinessContext } from '../../../../context/business-context';
 import {
   INVOICE_TYPE_LABELS,
-  LOCATION_TYPE_LABELS,
   type GridResult,
   type PosContact,
   type PosContactType,
   type PosInvoice,
   type PosInvoiceType,
-  type PosLocation,
   type PosProduct,
   type PosStaff,
   type ServiceItem,
@@ -102,49 +101,50 @@ export default function EditInvoicePage() {
   }, [businessId]);
 
   const fetchPartyOptions = useCallback(
-    async (search: string): Promise<AsyncOption[]> => {
-      if (!businessId || !invoice) return [];
-      if (invoice.party_type === 'outlet') {
-        const res = await apiClient<GridResult<PosLocation>>(
-          `/api/businesses/${businessId}/locations?search=${encodeURIComponent(search)}&size=20`,
-        );
-        return res.data
-          .filter((l) => l.id !== invoice.location_id)
-          .map((l) => ({ id: l.id, label: l.name, description: LOCATION_TYPE_LABELS[l.type] ?? l.type }));
-      }
+    async (search: string, page: number): Promise<PagedFetchResult> => {
+      if (!businessId || !invoice) return { items: [], hasMore: false };
       const partyType: PosContactType =
         invoice.party_type === 'customer' ? 'customer' : invoice.party_type === 'lender' ? 'lender' : 'supplier';
       const res = await apiClient<GridResult<PosContact>>(
-        `/api/businesses/${businessId}/contacts?search=${encodeURIComponent(search)}&filter[type]=${partyType}&size=20`,
+        `/api/businesses/${businessId}/contacts?search=${encodeURIComponent(search)}&filter[type]=${partyType}&size=10&page=${page}`,
       );
-      return res.data.map((c) => ({ id: c.id, label: c.name, description: c.phone ?? c.plate_number ?? undefined }));
+      return {
+        items: res.data.map((c) => ({ id: c.id, label: c.name, description: c.phone ?? c.plate_number ?? undefined })),
+        hasMore: res.meta.currentPage < res.meta.totalPages,
+      };
     },
     [businessId, invoice],
   );
 
   const fetchProductOptions = useCallback(
-    async (search: string): Promise<AsyncOption[]> => {
-      if (!businessId) return [];
+    async (search: string, page: number): Promise<PagedFetchResult> => {
+      if (!businessId) return { items: [], hasMore: false };
       const res = await apiClient<GridResult<PosProduct>>(
-        `/api/businesses/${businessId}/products?search=${encodeURIComponent(search)}&size=20`,
+        `/api/businesses/${businessId}/products?search=${encodeURIComponent(search)}&size=10&page=${page}`,
       );
-      return res.data.map((p) => ({
-        id: p.id,
-        label: `${p.name} (${p.sku})`,
-        description: p.tags?.length ? p.tags.join(', ') : undefined,
-        raw: p,
-      }));
+      return {
+        items: res.data.map((p) => ({
+          id: p.id,
+          label: `${p.name} (${p.sku})`,
+          description: p.tags?.length ? p.tags.join(', ') : undefined,
+          raw: p,
+        })),
+        hasMore: res.meta.currentPage < res.meta.totalPages,
+      };
     },
     [businessId],
   );
 
   const fetchServiceOptions = useCallback(
-    async (search: string): Promise<AsyncOption[]> => {
-      if (!businessId) return [];
+    async (search: string, page: number): Promise<PagedFetchResult> => {
+      if (!businessId) return { items: [], hasMore: false };
       const res = await apiClient<GridResult<ServiceItem>>(
-        `/api/businesses/${businessId}/services?search=${encodeURIComponent(search)}&size=20`,
+        `/api/businesses/${businessId}/services?search=${encodeURIComponent(search)}&size=10&page=${page}`,
       );
-      return res.data.map((s) => ({ id: s.id, label: s.name, raw: s }));
+      return {
+        items: res.data.map((s) => ({ id: s.id, label: s.name, raw: s })),
+        hasMore: res.meta.currentPage < res.meta.totalPages,
+      };
     },
     [businessId],
   );
@@ -243,39 +243,48 @@ export default function EditInvoicePage() {
         <ReadOnlyField label="Tipe Faktur" value={INVOICE_TYPE_LABELS[invoice.type]} />
         <ReadOnlyField label={invoice.type === 'transfer' ? 'Lokasi Asal' : 'Lokasi'} value={locationLabel} />
 
-        <AsyncSearchSelect
-          label={
-            invoice.type === 'sale'
-              ? 'Pelanggan'
-              : invoice.type === 'purchase'
-                ? 'Supplier'
-                : invoice.type === 'capital'
-                  ? 'Pemberi Modal'
-                  : invoice.type === 'withdrawal'
-                    ? 'Diambil Oleh'
-                    : 'Lokasi Tujuan'
-          }
-          placeholder="Cari..."
-          selectedId={partyId}
-          selectedLabel={partyLabel}
-          onSelect={(id, label) => {
-            setPartyId(id);
-            setPartyLabel(label);
-          }}
-          fetchOptions={fetchPartyOptions}
-          onCreateNew={
-            invoice.party_type !== 'outlet'
-              ? (query) => {
-                  setContactModalQuery(query);
-                  setContactModalOpen(true);
-                }
-              : undefined
-          }
-          createNewLabel={(q) =>
-            `Tambah "${q}" sebagai ${invoice.party_type === 'customer' ? 'pelanggan' : invoice.party_type === 'lender' ? 'pemberi modal' : 'supplier'} baru`
-          }
-          isRequired
-        />
+        {invoice.party_type === 'outlet' ? (
+          <LocationSelect
+            label="Lokasi Tujuan"
+            placeholder="Pilih lokasi tujuan..."
+            businessId={businessId}
+            selectedId={partyId}
+            onSelect={(id, label) => {
+              setPartyId(id);
+              setPartyLabel(label);
+            }}
+            excludeId={invoice.location_id}
+            isRequired
+          />
+        ) : (
+          <AsyncSearchSelect
+            label={
+              invoice.type === 'sale'
+                ? 'Pelanggan'
+                : invoice.type === 'purchase'
+                  ? 'Supplier'
+                  : invoice.type === 'capital'
+                    ? 'Pemberi Modal'
+                    : 'Diambil Oleh'
+            }
+            placeholder="Cari..."
+            selectedId={partyId}
+            selectedLabel={partyLabel}
+            onSelect={(id, label) => {
+              setPartyId(id);
+              setPartyLabel(label);
+            }}
+            fetchOptions={fetchPartyOptions}
+            onCreateNew={(query) => {
+              setContactModalQuery(query);
+              setContactModalOpen(true);
+            }}
+            createNewLabel={(q) =>
+              `Tambah "${q}" sebagai ${invoice.party_type === 'customer' ? 'pelanggan' : invoice.party_type === 'lender' ? 'pemberi modal' : 'supplier'} baru`
+            }
+            isRequired
+          />
+        )}
       </div>
 
       {isAmountBasedType(invoice.type) ? (

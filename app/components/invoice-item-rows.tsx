@@ -1,8 +1,9 @@
 'use client';
 
-import { Button } from '@heroui/react';
+import { useState } from 'react';
+import { Button, Switch } from '@heroui/react';
 
-import { AsyncSearchSelect, type AsyncOption } from './async-search-select';
+import type { PagedFetchOptions } from './async-search-select';
 import { ProductSearchSelect } from './product-search-select';
 import { CurrencyInput } from './currency-input';
 import { NumberInput } from './number-input';
@@ -41,11 +42,13 @@ interface ItemRowsEditorProps {
   items: ItemRow[];
   onChange: (items: ItemRow[]) => void;
   invoiceType: PosInvoiceType;
-  fetchProductOptions: (search: string) => Promise<AsyncOption[]>;
+  fetchProductOptions: PagedFetchOptions;
 }
 
 /** Editor baris barang faktur (produk/qty/harga) — dipakai di form Buat Faktur & Edit Draft. */
 export function ItemRowsEditor({ items, onChange, invoiceType, fetchProductOptions }: ItemRowsEditorProps) {
+  const [showPurchasePrice, setShowPurchasePrice] = useState(true);
+
   function updateItem(index: number, patch: Partial<ItemRow>) {
     onChange(items.map((r, i) => (i === index ? { ...r, ...patch } : r)));
   }
@@ -71,7 +74,18 @@ export function ItemRowsEditor({ items, onChange, invoiceType, fetchProductOptio
 
   return (
     <div className="">
-      <p className="text-sm font-medium text-foreground">Barang</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-foreground">Barang</p>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-default-500">Tampilkan harga beli</span>
+          <Switch
+            size="sm"
+            isSelected={showPurchasePrice}
+            onValueChange={setShowPurchasePrice}
+            aria-label="Tampilkan harga beli"
+          />
+        </div>
+      </div>
       {items.map((item, idx) => {
         const defaultPrice = Number(item.default_price || 0);
         const adjustedPrice = Number(item.adjusted_price || 0);

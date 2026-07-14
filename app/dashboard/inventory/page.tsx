@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Chip, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from '@heroui/react';
 import { PackageSearch } from 'lucide-react';
 
-import { type AsyncOption } from '../../components/async-search-select';
+import { type PagedFetchResult } from '../../components/async-search-select';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { ProductSearchSelect } from '../../components/product-search-select';
 import { NoBusinessState } from '../../components/no-business-state';
@@ -32,17 +32,20 @@ export default function InventoryDashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchProductOptions = useCallback(
-    async (search: string): Promise<AsyncOption[]> => {
-      if (!businessId) return [];
+    async (search: string, page: number): Promise<PagedFetchResult> => {
+      if (!businessId) return { items: [], hasMore: false };
       const res = await apiClient<GridResult<PosProduct>>(
-        `/api/businesses/${businessId}/products?search=${encodeURIComponent(search)}&size=20`,
+        `/api/businesses/${businessId}/products?search=${encodeURIComponent(search)}&size=10&page=${page}`,
       );
-      return res.data.map((p) => ({
-        id: p.id,
-        label: `${p.name} (${p.sku})`,
-        description: p.tags?.length ? p.tags.join(', ') : undefined,
-        raw: p,
-      }));
+      return {
+        items: res.data.map((p) => ({
+          id: p.id,
+          label: `${p.name} (${p.sku})`,
+          description: p.tags?.length ? p.tags.join(', ') : undefined,
+          raw: p,
+        })),
+        hasMore: res.meta.currentPage < res.meta.totalPages,
+      };
     },
     [businessId],
   );

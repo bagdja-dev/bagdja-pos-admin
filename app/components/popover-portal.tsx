@@ -8,8 +8,10 @@ interface PopoverPortalProps {
   isOpen: boolean;
   onClose: () => void;
   children: ReactNode;
-  /** Lebar target popover (px) — dipakai untuk hitung posisi align-right supaya tidak keluar viewport. */
+  /** Lebar target popover (px) — dipakai untuk hitung posisi align-right supaya tidak keluar viewport. Diabaikan jika `matchAnchorWidth`. */
   width?: number;
+  /** Jika true, lebar & posisi kiri popover mengikuti persis lebar anchor (mis. dropdown select) alih-alih align-kanan dengan `width` tetap. */
+  matchAnchorWidth?: boolean;
 }
 
 /**
@@ -19,9 +21,9 @@ interface PopoverPortalProps {
  * `position: absolute` biasa. Tutup otomatis saat klik luar, Escape, resize,
  * atau scroll.
  */
-export function PopoverPortal({ anchorRef, isOpen, onClose, children, width = 400 }: PopoverPortalProps) {
+export function PopoverPortal({ anchorRef, isOpen, onClose, children, width = 400, matchAnchorWidth = false }: PopoverPortalProps) {
   const [mounted, setMounted] = useState(false);
-  const [style, setStyle] = useState<{ top: number; left: number } | null>(null);
+  const [style, setStyle] = useState<{ top: number; left: number; width: number } | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
@@ -34,11 +36,17 @@ export function PopoverPortal({ anchorRef, isOpen, onClose, children, width = 40
 
     const rect = anchorRef.current.getBoundingClientRect();
     const margin = 8;
+
+    if (matchAnchorWidth) {
+      setStyle({ top: rect.bottom + margin, left: rect.left, width: rect.width });
+      return;
+    }
+
     let left = rect.right - width;
     left = Math.max(margin, Math.min(left, window.innerWidth - width - margin));
 
-    setStyle({ top: rect.bottom + margin, left });
-  }, [isOpen, anchorRef, width]);
+    setStyle({ top: rect.bottom + margin, left, width });
+  }, [isOpen, anchorRef, width, matchAnchorWidth]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -51,7 +59,12 @@ export function PopoverPortal({ anchorRef, isOpen, onClose, children, width = 40
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
     }
-    function handleReposition() {
+    function handleReposition(e: Event) {
+      // Scroll di dalam popover sendiri (mis. list hasil pencarian) tidak boleh
+      // menutup popover — event `scroll` tidak bubble tapi tetap kena listener
+      // capture-phase ini, jadi tanpa guard ini scroll di list langsung menutup
+      // dropdown-nya (terasa seperti "tidak bisa discroll", terutama di mobile).
+      if (popoverRef.current?.contains(e.target as Node)) return;
       onClose();
     }
 
@@ -75,7 +88,7 @@ export function PopoverPortal({ anchorRef, isOpen, onClose, children, width = 40
   return createPortal(
     <div
       ref={popoverRef}
-      style={{ position: 'fixed', top: style.top, left: style.left, width, zIndex: 100 }}
+      style={{ position: 'fixed', top: style.top, left: style.left, width: style.width, zIndex: 100 }}
     >
       {children}
     </div>,

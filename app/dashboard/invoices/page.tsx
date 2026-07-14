@@ -33,6 +33,55 @@ const STATUS_COLOR: Record<string, 'default' | 'primary' | 'success' | 'danger'>
   void: 'danger',
 };
 
+/** Kartu faktur untuk mode mobile — seluruh kartu bisa ditekan langsung ke halaman detail. */
+function renderInvoiceCard(row: PosInvoice) {
+  return (
+    <Link
+      href={`/dashboard/invoices/${row.id}`}
+      className="block space-y-3 rounded-xl border border-default-200 bg-white p-4 transition-colors active:bg-default-50"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="font-mono text-xs text-default-500">{row.invoice_number}</p>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="text-sm font-medium text-foreground">{INVOICE_TYPE_LABELS[row.type]}</span>
+            {row.ref_invoice_id && row.type !== 'transfer' && (
+              <Chip size="sm" color="warning" variant="flat">
+                Retur
+              </Chip>
+            )}
+          </div>
+        </div>
+        <Chip size="sm" color={STATUS_COLOR[row.status]} variant="flat">
+          {INVOICE_STATUS_LABELS[row.status]}
+        </Chip>
+      </div>
+
+      <div className="text-sm text-default-500">
+        {row.flow === 'in' ? 'Masuk' : 'Keluar'} · {row.location?.name ?? '—'}
+      </div>
+      <p className="text-sm text-foreground">{row.party?.name ?? '—'}</p>
+
+      <div className="flex items-end justify-between border-t border-default-100 pt-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-default-400">Total</p>
+          <p className="text-base font-bold text-foreground">{formatCurrency(row.grand_total)}</p>
+        </div>
+        {row.payment_status !== 'not_applicable' && row.outstanding ? (
+          <div className="text-right">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-default-400">Sisa Bayar</p>
+            <p className="text-sm font-medium text-danger">{formatCurrency(row.outstanding)}</p>
+          </div>
+        ) : (
+          <p className="text-xs text-default-400">{PAYMENT_STATUS_LABELS[row.payment_status]}</p>
+        )}
+      </div>
+
+      <p className="text-right text-xs text-default-400">{new Date(row.created_at).toLocaleString('id-ID')}</p>
+    </Link>
+  );
+}
+
 export default function InvoicesPage() {
   const router = useRouter();
   const { businessId, loading: businessLoading } = useBusinessContext();
@@ -181,6 +230,7 @@ export default function InvoicesPage() {
         defaultSort="created_at:desc"
         rowKey={(row) => row.id}
         emptyState={{ title: 'Belum ada faktur', description: 'Buat faktur pertama untuk mulai transaksi.', icon: <Receipt className="h-8 w-8 text-default-400" /> }}
+        renderCard={renderInvoiceCard}
       />
     </div>
   );

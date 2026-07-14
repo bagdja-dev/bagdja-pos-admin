@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button, Input, Select, SelectItem } from '@heroui/react';
 
-import { AsyncSearchSelect, type AsyncOption } from './async-search-select';
+import { AsyncSearchSelect, type PagedFetchOptions } from './async-search-select';
 import { CurrencyInput } from './currency-input';
 import { QuickAddServiceModal } from './quick-add-service-modal';
 import type { PosStaff, ServiceItem } from '../lib/types';
@@ -24,7 +24,7 @@ interface ServiceRowsEditorProps {
   rows: ServiceRow[];
   onChange: (rows: ServiceRow[]) => void;
   mechanics: PosStaff[];
-  fetchServiceOptions: (search: string) => Promise<AsyncOption[]>;
+  fetchServiceOptions: PagedFetchOptions;
   /** Wajib diisi supaya "+ Tambah jasa baru" di pencarian master jasa bisa memanggil `POST /services`. */
   businessId: string;
 }

@@ -184,9 +184,9 @@ export default function ProductsPage() {
       key: 'tags',
       label: 'Tag',
       width: '30%',
-      render: (v: string[]) =>
+      render: (v: string[], _row, context) =>
         v && v.length > 0 ? (
-          <div className="flex gap-1 ">
+          <div className={`flex gap-1 ${context?.isCard ? 'flex-wrap justify-end' : ''}`}>
             {v.map((tag) => (
               <Chip key={tag} size="sm" variant="flat">
                 {tag}

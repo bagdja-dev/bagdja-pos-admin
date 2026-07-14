@@ -12,6 +12,9 @@ import {
   Inbox,
   Settings,
   RefreshCcw,
+  LayoutGrid,
+  Rows3,
+  MonitorSmartphone,
 } from 'lucide-react';
 
 import { useDebouncedValue } from '../hooks/use-debounced-value';
@@ -25,12 +28,17 @@ import type { GridResult } from '../lib/types';
  * yang dipakai di app ini, dan search di-debounce (gap yang belum ada di versi asli).
  */
 
+export interface GridColumnRenderContext {
+  /** True kalau dirender di dalam kartu (mode mobile), false/undefined di baris tabel — dipakai kalau sebuah kolom perlu tampilan beda antar mode (mis. tag yang perlu wrap di kartu tapi nowrap+scroll di tabel). */
+  isCard: boolean;
+}
+
 export interface GridColumn<T = any> {
   key: string;
   label: string;
   sortable?: boolean;
   width?: string;
-  render?: (value: any, row: T) => ReactNode;
+  render?: (value: any, row: T, context?: GridColumnRenderContext) => ReactNode;
 }
 
 export interface FilterField {
@@ -49,6 +57,8 @@ export interface FetchParams {
   sort: string;
 }
 
+type ViewMode = 'auto' | 'table' | 'card';
+
 interface DataGridProps<T = any> {
   title?: string;
   description?: string;
@@ -60,6 +70,8 @@ interface DataGridProps<T = any> {
   refreshTrigger?: unknown;
   defaultSort?: string;
   rowKey?: (row: T) => string;
+  /** Render kartu kustom per baris untuk mode mobile — kalau tidak diisi, fallback ke kartu generik (label:value per kolom). */
+  renderCard?: (row: T) => ReactNode;
 }
 
 export function DataGrid<T = any>({
@@ -73,6 +85,7 @@ export function DataGrid<T = any>({
   refreshTrigger,
   defaultSort = 'created_at:desc',
   rowKey,
+  renderCard,
 }: DataGridProps<T>) {
   const [data, setData] = useState<T[]>([]);
   const [meta, setMeta] = useState<GridResult<T>['meta'] | null>(null);
@@ -85,6 +98,7 @@ export function DataGrid<T = any>({
   const [filter, setFilter] = useState<Record<string, string>>({});
   const [tempFilter, setTempFilter] = useState<Record<string, string>>({});
   const [sort, setSort] = useState(defaultSort);
+  const [viewMode, setViewMode] = useState<ViewMode>('auto');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const filterButtonRef = useRef<HTMLButtonElement>(null);
@@ -135,6 +149,43 @@ export function DataGrid<T = any>({
     setSort(`${key}:${dir}`);
     setPage(1);
   }
+
+  /**
+   * Fallback kartu generik (label:value per kolom) dipakai kalau caller tidak
+   * menyediakan `renderCard`. Kolom `actions` sengaja dipisah ke baris bawah
+   * (bukan ikut label:value biasa) supaya tombol Edit/Hapus yang biasanya ada
+   * di sana tetap bisa dijangkau — beberapa halaman grid tidak punya
+   * `onRowClick`, jadi kolom itu satu-satunya jalan ke aksi tersebut.
+   */
+  function renderDefaultCard(row: T) {
+    const actionsCol = columns.find((c) => c.key === 'actions');
+    const infoCols = columns.filter((c) => c.key !== 'actions');
+
+    return (
+      <div className="space-y-2 rounded-xl border border-default-200 bg-white p-4">
+        {infoCols.map((col) => (
+          <div key={col.key} className="flex items-start justify-between gap-3 text-sm">
+            <span className="shrink-0 text-default-500">{col.label}</span>
+            <span className="text-right text-foreground">
+              {col.render
+                ? col.render((row as Record<string, unknown>)[col.key], row, { isCard: true })
+                : String((row as Record<string, unknown>)[col.key] ?? '—')}
+            </span>
+          </div>
+        ))}
+        {actionsCol && (
+          <div className="flex justify-end border-t border-default-100 pt-2">
+            {actionsCol.render?.((row as Record<string, unknown>)[actionsCol.key], row, { isCard: true })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Mode 'auto' murni CSS (hidden md:block / md:hidden) — kartu di mobile, tabel di desktop,
+  // tanpa listener resize (menghindari flash saat hydration). Mode manual menimpa keduanya.
+  const tableVisibility = viewMode === 'table' ? 'block' : viewMode === 'card' ? 'hidden' : 'hidden md:block';
+  const cardVisibility = viewMode === 'card' ? 'block' : viewMode === 'table' ? 'hidden' : 'block md:hidden';
 
   return (
     <div className="flex flex-col gap-4">
@@ -302,6 +353,32 @@ export function DataGrid<T = any>({
                     </button>
                   </div>
 
+                  <div className="mb-5">
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-default-500">Tampilan Data</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(
+                        [
+                          { mode: 'auto' as ViewMode, label: 'Otomatis', icon: MonitorSmartphone },
+                          { mode: 'table' as ViewMode, label: 'Tabel', icon: Rows3 },
+                          { mode: 'card' as ViewMode, label: 'Kartu', icon: LayoutGrid },
+                        ]
+                      ).map(({ mode, label, icon: Icon }) => (
+                        <button
+                          key={mode}
+                          onClick={() => setViewMode(mode)}
+                          className={`flex flex-col items-center justify-center gap-1 rounded-lg py-2 text-xs font-bold transition-all ${
+                            viewMode === mode
+                              ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                              : 'bg-default-100 text-default-500 hover:bg-default-200'
+                          }`}
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {sortableColumns.length > 0 && (
                     <div className="mb-5">
                       <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-default-500">Urutkan</p>
@@ -445,7 +522,7 @@ export function DataGrid<T = any>({
         </div>
       ) : (
         <div className="flex flex-col">
-          <div className="overflow-x-auto rounded-xl border border-default-200">
+          <div className={`${tableVisibility} overflow-x-auto rounded-xl border border-default-200`}>
             <table className="min-w-full divide-y divide-default-200">
               <thead className="bg-default-50">
                 <tr>
@@ -500,6 +577,18 @@ export function DataGrid<T = any>({
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className={`${cardVisibility} flex flex-col gap-3`}>
+            {data.map((row, idx) => (
+              <div
+                key={rowKey ? rowKey(row) : idx}
+                onClick={() => onRowClick?.(row)}
+                className={onRowClick ? 'cursor-pointer' : ''}
+              >
+                {renderCard ? renderCard(row) : renderDefaultCard(row)}
+              </div>
+            ))}
           </div>
 
           {meta && (

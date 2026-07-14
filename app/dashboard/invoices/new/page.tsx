@@ -4,8 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Select, SelectItem, Textarea } from '@heroui/react';
 
-import { AsyncSearchSelect, type AsyncOption } from '../../../components/async-search-select';
+import { AsyncSearchSelect, type PagedFetchResult } from '../../../components/async-search-select';
 import { CurrencyInput } from '../../../components/currency-input';
+import { LocationSelect } from '../../../components/location-select';
 import { EMPTY_ITEM_ROW, ItemRowsEditor, calcGrandTotal, formatCurrency, type ItemRow } from '../../../components/invoice-item-rows';
 import { ServiceRowsEditor, calcServiceTotal, type ServiceRow } from '../../../components/invoice-service-rows';
 import { LoadingSpinner } from '../../../components/loading-spinner';
@@ -14,7 +15,6 @@ import { QuickAddContactModal } from '../../../components/quick-add-contact-moda
 import { apiClient, ApiError } from '../../../lib/api-client';
 import { useBusinessContext } from '../../../context/business-context';
 import {
-  LOCATION_TYPE_LABELS,
   type GridResult,
   type PosContact,
   type PosContactType,
@@ -106,59 +106,49 @@ export default function NewInvoicePage() {
     };
   }, [businessId]);
 
-  const fetchLocationOptions = useCallback(
-    async (search: string): Promise<AsyncOption[]> => {
-      if (!businessId) return [];
-      const res = await apiClient<GridResult<PosLocation>>(
-        `/api/businesses/${businessId}/locations?search=${encodeURIComponent(search)}&size=20`,
-      );
-      return res.data.map((l) => ({ id: l.id, label: l.name, description: LOCATION_TYPE_LABELS[l.type] ?? l.type }));
-    },
-    [businessId],
-  );
-
   const fetchPartyOptions = useCallback(
-    async (search: string): Promise<AsyncOption[]> => {
-      if (!businessId) return [];
-      if (type === 'transfer') {
-        const res = await apiClient<GridResult<PosLocation>>(
-          `/api/businesses/${businessId}/locations?search=${encodeURIComponent(search)}&size=20`,
-        );
-        return res.data
-          .filter((l) => l.id !== locationId)
-          .map((l) => ({ id: l.id, label: l.name, description: LOCATION_TYPE_LABELS[l.type] ?? l.type }));
-      }
+    async (search: string, page: number): Promise<PagedFetchResult> => {
+      if (!businessId) return { items: [], hasMore: false };
       const res = await apiClient<GridResult<PosContact>>(
-        `/api/businesses/${businessId}/contacts?search=${encodeURIComponent(search)}&filter[type]=${partyType}&size=20`,
+        `/api/businesses/${businessId}/contacts?search=${encodeURIComponent(search)}&filter[type]=${partyType}&size=10&page=${page}`,
       );
-      return res.data.map((c) => ({ id: c.id, label: c.name, description: c.phone ?? c.plate_number ?? undefined }));
+      return {
+        items: res.data.map((c) => ({ id: c.id, label: c.name, description: c.phone ?? c.plate_number ?? undefined })),
+        hasMore: res.meta.currentPage < res.meta.totalPages,
+      };
     },
-    [businessId, type, partyType, locationId],
+    [businessId, partyType],
   );
 
   const fetchProductOptions = useCallback(
-    async (search: string): Promise<AsyncOption[]> => {
-      if (!businessId) return [];
+    async (search: string, page: number): Promise<PagedFetchResult> => {
+      if (!businessId) return { items: [], hasMore: false };
       const res = await apiClient<GridResult<PosProduct>>(
-        `/api/businesses/${businessId}/products?search=${encodeURIComponent(search)}&size=20`,
+        `/api/businesses/${businessId}/products?search=${encodeURIComponent(search)}&size=10&page=${page}`,
       );
-      return res.data.map((p) => ({
-        id: p.id,
-        label: `${p.name} (${p.sku})`,
-        description: p.tags?.length ? p.tags.join(', ') : undefined,
-        raw: p,
-      }));
+      return {
+        items: res.data.map((p) => ({
+          id: p.id,
+          label: `${p.name} (${p.sku})`,
+          description: p.tags?.length ? p.tags.join(', ') : undefined,
+          raw: p,
+        })),
+        hasMore: res.meta.currentPage < res.meta.totalPages,
+      };
     },
     [businessId],
   );
 
   const fetchServiceOptions = useCallback(
-    async (search: string): Promise<AsyncOption[]> => {
-      if (!businessId) return [];
+    async (search: string, page: number): Promise<PagedFetchResult> => {
+      if (!businessId) return { items: [], hasMore: false };
       const res = await apiClient<GridResult<ServiceItem>>(
-        `/api/businesses/${businessId}/services?search=${encodeURIComponent(search)}&size=20`,
+        `/api/businesses/${businessId}/services?search=${encodeURIComponent(search)}&size=10&page=${page}`,
       );
-      return res.data.map((s) => ({ id: s.id, label: s.name, raw: s }));
+      return {
+        items: res.data.map((s) => ({ id: s.id, label: s.name, raw: s })),
+        hasMore: res.meta.currentPage < res.meta.totalPages,
+      };
     },
     [businessId],
   );
@@ -259,40 +249,53 @@ export default function NewInvoicePage() {
           <SelectItem key="withdrawal">Penarikan</SelectItem>
         </Select>
 
-        <AsyncSearchSelect
+        <LocationSelect
           label={type === 'transfer' ? 'Lokasi Asal' : 'Lokasi'}
-          placeholder="Cari lokasi..."
+          businessId={businessId}
           selectedId={locationId}
-          selectedLabel={locationLabel}
           onSelect={(id, label) => {
             setLocationId(id);
             setLocationLabel(label);
           }}
-          fetchOptions={fetchLocationOptions}
           isRequired
         />
 
-        <AsyncSearchSelect
-          label={PARTY_FIELD[type].label}
-          placeholder={PARTY_FIELD[type].placeholder}
-          selectedId={partyId}
-          selectedLabel={partyLabel}
-          onSelect={(id, label) => {
-            setPartyId(id);
-            setPartyLabel(label);
-          }}
-          fetchOptions={fetchPartyOptions}
-          onCreateNew={
-            PARTY_FIELD[type].contactType
-              ? (query) => {
-                  setContactModalQuery(query);
-                  setContactModalOpen(true);
-                }
-              : undefined
-          }
-          createNewLabel={(q) => `Tambah "${q}" sebagai ${PARTY_FIELD[type].label.toLowerCase()} baru`}
-          isRequired
-        />
+        {type === 'transfer' ? (
+          <LocationSelect
+            label="Lokasi Tujuan"
+            placeholder="Pilih lokasi tujuan..."
+            businessId={businessId}
+            selectedId={partyId}
+            onSelect={(id, label) => {
+              setPartyId(id);
+              setPartyLabel(label);
+            }}
+            excludeId={locationId}
+            isRequired
+          />
+        ) : (
+          <AsyncSearchSelect
+            label={PARTY_FIELD[type].label}
+            placeholder={PARTY_FIELD[type].placeholder}
+            selectedId={partyId}
+            selectedLabel={partyLabel}
+            onSelect={(id, label) => {
+              setPartyId(id);
+              setPartyLabel(label);
+            }}
+            fetchOptions={fetchPartyOptions}
+            onCreateNew={
+              PARTY_FIELD[type].contactType
+                ? (query) => {
+                    setContactModalQuery(query);
+                    setContactModalOpen(true);
+                  }
+                : undefined
+            }
+            createNewLabel={(q) => `Tambah "${q}" sebagai ${PARTY_FIELD[type].label.toLowerCase()} baru`}
+            isRequired
+          />
+        )}
       </div>
 
       {isAmountBasedType(type) ? (
