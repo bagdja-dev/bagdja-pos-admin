@@ -60,17 +60,17 @@ export function PopoverPortal({ anchorRef, isOpen, onClose, children, width = 40
       if (e.key === 'Escape') onClose();
     }
     function handleReposition(e: Event) {
-      // Scroll di dalam popover sendiri (mis. list hasil pencarian) tidak boleh
-      // menutup popover — event `scroll` tidak bubble tapi tetap kena listener
-      // capture-phase ini, jadi tanpa guard ini scroll di list langsung menutup
-      // dropdown-nya (terasa seperti "tidak bisa discroll", terutama di mobile).
+      // Kalau fokus sedang di dalam popover (mis. search box), resize/scroll yang
+      // terjadi hampir pasti efek keyboard virtual mobile — baik keyboard-nya
+      // muncul (resize di beberapa browser Android) maupun browser auto-scroll
+      // halaman supaya field yang difokus kelihatan di atas keyboard (scroll di
+      // `document`/`main`, bukan di dalam popover). Keduanya bukan sinyal "user
+      // scroll halaman menjauh", jadi abaikan selama fokus masih di dalam popover.
+      if (popoverRef.current?.contains(document.activeElement)) return;
+      // Scroll di dalam popover sendiri (mis. list hasil pencarian) juga tidak
+      // boleh menutup — event `scroll` tidak bubble tapi tetap kena listener
+      // capture-phase ini.
       if (e.type === 'scroll' && popoverRef.current?.contains(e.target as Node)) return;
-      // Resize juga ditembakkan browser mobile saat keyboard virtual muncul/hilang
-      // (tinggi viewport berubah). Kalau fokus sedang ada di dalam popover (mis.
-      // search box), anggap resize ini akibat keyboard, bukan perubahan layout
-      // beneran — jangan tutup. Tanpa guard ini, tap ke search box langsung
-      // menutup dropdown-nya sendiri begitu keyboard muncul.
-      if (e.type === 'resize' && popoverRef.current?.contains(document.activeElement)) return;
       onClose();
     }
 
