@@ -207,7 +207,8 @@ export function DataGrid<T = any>({
                   placeholder="Cari..."
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  className="w-full rounded-xl border border-default-200 bg-default-50 py-2.5 pl-9 pr-12 text-sm text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  // text-base (bukan text-sm) sengaja — di bawah 16px, Safari/Chrome mobile auto-zoom saat fokus.
+                  className="w-full rounded-xl border border-default-200 bg-default-50 py-2.5 pl-9 pr-12 text-base text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
                 {filterFields.length > 0 && (
                   <button
@@ -256,7 +257,7 @@ export function DataGrid<T = any>({
                             placeholder={field.placeholder}
                             value={tempFilter[field.key] || ''}
                             onChange={(e) => setTempFilter({ ...tempFilter, [field.key]: e.target.value })}
-                            className="w-full rounded-xl border border-default-200 bg-default-50 px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            className="w-full rounded-xl border border-default-200 bg-default-50 px-4 py-2 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                           />
                         ) : (
                           <Select

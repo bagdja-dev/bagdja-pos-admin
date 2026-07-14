@@ -152,7 +152,8 @@ export function LocationSelect({
               }}
               onKeyDown={handleSearchKeyDown}
               placeholder="Cari lokasi..."
-              className="w-full rounded-md border border-default-200 px-2 py-1.5 text-sm outline-none focus:border-primary"
+              // text-base (bukan text-sm) sengaja — di bawah 16px, Safari/Chrome mobile auto-zoom saat fokus.
+              className="w-full rounded-md border border-default-200 px-2 py-1.5 text-base outline-none focus:border-primary"
             />
           </div>
           <div className="max-h-60 overflow-auto overscroll-contain py-1 text-sm" role="listbox">

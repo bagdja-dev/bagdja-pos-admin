@@ -174,7 +174,8 @@ export function ProductSearchSelect({
               onChange={(e) => setFilterText(e.target.value)}
               onKeyDown={handleSearchKeyDown}
               placeholder="Cari nama, SKU, atau tag..."
-              className="w-full rounded-md border border-default-200 px-2 py-1.5 text-sm outline-none focus:border-primary"
+              // text-base (bukan text-sm) sengaja — di bawah 16px, Safari/Chrome mobile auto-zoom saat fokus.
+              className="w-full rounded-md border border-default-200 px-2 py-1.5 text-base outline-none focus:border-primary"
             />
           </div>
           <div
