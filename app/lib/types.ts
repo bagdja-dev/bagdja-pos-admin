@@ -225,6 +225,8 @@ export interface PosInvoice {
   grand_total: string;
   /** Catatan tambahan bebas — opsional, tidak dipakai untuk logika apa pun. */
   note: string | null;
+  /** Estimasi keuntungan kotor — cuma diisi untuk type='sale' yang sudah submitted/settled, NULL selainnya. */
+  estimated_profit: string | null;
   submitted_at: string | null;
   settled_at: string | null;
   created_at: string;

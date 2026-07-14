@@ -28,6 +28,7 @@ import { ReadOnlyField } from '../../../components/read-only-field';
 import { apiClient, ApiError } from '../../../lib/api-client';
 import { useBusinessContext } from '../../../context/business-context';
 import {
+  hasMinRole,
   INVOICE_STATUS_LABELS,
   INVOICE_TYPE_LABELS,
   PAYMENT_STATUS_LABELS,
@@ -56,7 +57,8 @@ function formatCurrency(value: string) {
 export default function InvoiceDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { businessId, activeMembership, loading: businessLoading } = useBusinessContext();
+  const { businessId, activeMembership, role, loading: businessLoading } = useBusinessContext();
+  const canSeeProfit = hasMinRole(role ?? '', 'manager');
 
   const [invoice, setInvoice] = useState<PosInvoice | null>(null);
   const [ledger, setLedger] = useState<{ entries: PosPaymentLedger[]; outstanding: number } | null>(null);
@@ -438,6 +440,14 @@ export default function InvoiceDetailPage() {
             <span>Grand Total</span>
             <span>{formatCurrency(invoice.grand_total)}</span>
           </div>
+          {canSeeProfit && invoice.estimated_profit != null && (
+            <div className="flex justify-between">
+              <span className="text-default-500">Est. Untung</span>
+              <span className={Number(invoice.estimated_profit) < 0 ? 'text-danger' : 'text-success'}>
+                {formatCurrency(invoice.estimated_profit)}
+              </span>
+            </div>
+          )}
           {ledger && (
             <div className="flex justify-between text-primary">
               <span>Sisa Tagihan</span>

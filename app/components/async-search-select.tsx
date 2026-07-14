@@ -3,11 +3,10 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { ChevronDown, Plus } from 'lucide-react';
 
-import { useDebouncedValue } from '../hooks/use-debounced-value';
-import { PopoverPortal } from './popover-portal';
+import { AppModal } from './app-modal';
+import { usePagedSearch } from '../hooks/use-paged-search';
 
 const CREATE_NEW_KEY = '__create_new__';
-/** Jarak (px) dari dasar list saat scroll dianggap "hampir mentok" — pemicu lazy load halaman berikutnya. */
 const LOAD_MORE_THRESHOLD = 48;
 
 export interface AsyncOption {
@@ -45,13 +44,14 @@ interface AsyncSearchSelectProps {
 }
 
 /**
- * Combobox pencarian server-side ala Select2 — field utama tombol pemicu
- * (tidak bisa diketik langsung), search box ada DI DALAM menu yang baru
- * muncul saat dibuka. Saat dibuka: fetch 10 hasil pertama (search kosong).
- * Ketik → debounce 300ms → fetch ulang dari halaman 1. Scroll list ke bawah
- * → lazy load halaman berikutnya (append), dipakai untuk data yang terus
- * bertambah (kontak, jasa) sehingga tidak realistis di-preload semua sekali
- * seperti `LocationSelect`.
+ * Combobox pencarian server-side — tombol pemicu membuka modal berisi search
+ * box + list hasil (bukan dropdown mengambang). Dipindah dari pola dropdown
+ * (Autocomplete/popover) karena setelah diuji, dropdown sangat tidak nyaman
+ * di mobile (tertutup sendiri akibat keyboard virtual, scroll list susah).
+ * Modal tidak butuh positioning relatif ke anchor sama sekali, jadi kelas
+ * masalah itu tidak ada lagi. Buka → fetch 10 hasil pertama (search kosong).
+ * Ketik → debounce 300ms → fetch ulang. Scroll list ke bawah → lazy load
+ * halaman berikutnya.
  */
 export function AsyncSearchSelect({
   label,
@@ -67,73 +67,15 @@ export function AsyncSearchSelect({
   createNewLabel,
 }: AsyncSearchSelectProps) {
   const [open, setOpen] = useState(false);
-  const [filterText, setFilterText] = useState('');
-  const [items, setItems] = useState<AsyncOption[]>([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [highlighted, setHighlighted] = useState(0);
-
-  const debouncedFilter = useDebouncedValue(filterText, 300);
-  const requestId = useRef(0);
-  const loadingMoreRef = useRef(false);
-
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const myRequest = ++requestId.current;
-    setLoading(true);
-    fetchOptions(debouncedFilter.trim(), 1)
-      .then((res) => {
-        if (myRequest !== requestId.current) return;
-        setItems(res.items);
-        setHasMore(res.hasMore);
-        setPage(1);
-        setHighlighted(0);
-      })
-      .catch(() => {
-        if (myRequest !== requestId.current) return;
-        setItems([]);
-        setHasMore(false);
-      })
-      .finally(() => {
-        if (myRequest !== requestId.current) return;
-        setLoading(false);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, debouncedFilter, fetchOptions]);
+  const { filterText, setFilterText, items, loading, loadingMore, highlighted, setHighlighted, loadMore, reset } =
+    usePagedSearch({ fetchOptions, isActive: open });
 
   useEffect(() => {
     if (open) requestAnimationFrame(() => searchRef.current?.focus());
   }, [open]);
-
-  function loadMore() {
-    if (loadingMoreRef.current || !hasMore) return;
-    loadingMoreRef.current = true;
-    const myRequest = requestId.current;
-    const nextPage = page + 1;
-    setLoadingMore(true);
-    fetchOptions(debouncedFilter.trim(), nextPage)
-      .then((res) => {
-        if (myRequest !== requestId.current) return;
-        setItems((prev) => [...prev, ...res.items]);
-        setHasMore(res.hasMore);
-        setPage(nextPage);
-      })
-      .catch(() => {
-        if (myRequest !== requestId.current) return;
-        setHasMore(false);
-      })
-      .finally(() => {
-        loadingMoreRef.current = false;
-        if (myRequest !== requestId.current) return;
-        setLoadingMore(false);
-      });
-  }
 
   function handleListScroll() {
     const el = listRef.current;
@@ -143,10 +85,7 @@ export function AsyncSearchSelect({
 
   function closeMenu() {
     setOpen(false);
-    setFilterText('');
-    setItems([]);
-    setHighlighted(0);
-    requestId.current++;
+    reset();
   }
 
   const trimmedInput = filterText.trim();
@@ -164,15 +103,10 @@ export function AsyncSearchSelect({
     }
     onSelect(opt.id, opt.label, opt.raw);
     closeMenu();
-    triggerRef.current?.focus();
   }
 
   function handleSearchKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      closeMenu();
-      triggerRef.current?.focus();
-    } else if (e.key === 'ArrowDown') {
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
       setHighlighted((h) => Math.min(h + 1, displayItems.length - 1));
     } else if (e.key === 'ArrowUp') {
@@ -195,41 +129,34 @@ export function AsyncSearchSelect({
       )}
 
       <button
-        ref={triggerRef}
         type="button"
         disabled={isDisabled}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(true)}
         className="flex w-full items-center justify-between rounded-lg border border-default-200 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-default-300 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <span className={selectedLabel ? 'text-foreground' : 'text-default-400'}>
+        <span className={selectedLabel ? 'truncate text-foreground' : 'truncate text-default-400'}>
           {selectedLabel || placeholder || 'Pilih...'}
         </span>
         <ChevronDown className="h-4 w-4 shrink-0 text-default-400" />
       </button>
 
-      <PopoverPortal anchorRef={triggerRef} isOpen={open} onClose={closeMenu} matchAnchorWidth>
-        <div className="rounded-lg border border-default-200 bg-white shadow-lg">
-          <div className="border-b border-default-100 p-2">
+      <AppModal isOpen={open} onClose={closeMenu} title={label || placeholder || 'Pilih'} size="sm">
+        <div className="-mx-5 -my-5 flex h-[70vh] max-h-[520px] flex-col sm:-mx-6">
+          <div className="shrink-0 border-b border-default-100 p-3">
             <input
               ref={searchRef}
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
               onKeyDown={handleSearchKeyDown}
               placeholder="Ketik untuk mencari..."
-              // text-base (bukan text-sm) sengaja — di bawah 16px, Safari/Chrome mobile auto-zoom saat fokus.
-              className="w-full rounded-md border border-default-200 px-2 py-1.5 text-base outline-none focus:border-primary"
+              className="w-full rounded-md border border-default-200 px-3 py-2 text-base outline-none focus:border-primary"
             />
           </div>
-          <div
-            ref={listRef}
-            onScroll={handleListScroll}
-            role="listbox"
-            className="max-h-60 overflow-auto overscroll-contain py-1 text-sm"
-          >
+          <div ref={listRef} onScroll={handleListScroll} role="listbox" className="flex-1 overflow-y-auto py-1 text-sm">
             {loading ? (
-              <div className="px-3 py-2 text-center text-default-400">Memuat...</div>
+              <div className="px-3 py-4 text-center text-default-400">Memuat...</div>
             ) : displayItems.length === 0 ? (
-              <div className="px-3 py-2 text-center text-default-400">Tidak ada hasil</div>
+              <div className="px-3 py-4 text-center text-default-400">Tidak ada hasil</div>
             ) : (
               <>
                 {displayItems.map((opt, idx) => (
@@ -239,7 +166,7 @@ export function AsyncSearchSelect({
                     aria-selected={opt.id === selectedId}
                     onMouseEnter={() => setHighlighted(idx)}
                     onClick={() => selectOption(opt)}
-                    className={`flex cursor-pointer items-center gap-1.5 px-3 py-2 ${idx === highlighted ? 'bg-default-100' : ''} ${
+                    className={`flex cursor-pointer items-center gap-1.5 px-4 py-3 active:bg-default-100 ${idx === highlighted ? 'bg-default-100' : ''} ${
                       opt.id === CREATE_NEW_KEY ? 'font-medium text-primary' : opt.id === selectedId ? 'font-medium text-primary' : ''
                     }`}
                   >
@@ -255,7 +182,7 @@ export function AsyncSearchSelect({
             )}
           </div>
         </div>
-      </PopoverPortal>
+      </AppModal>
     </div>
   );
 }

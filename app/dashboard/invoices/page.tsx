@@ -13,6 +13,7 @@ import { useNewShortcut } from '../../hooks/use-new-shortcut';
 import { apiClient, buildGridQueryString } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
 import {
+  hasMinRole,
   INVOICE_STATUS_LABELS,
   INVOICE_TYPE_LABELS,
   PAYMENT_STATUS_LABELS,
@@ -33,8 +34,13 @@ const STATUS_COLOR: Record<string, 'default' | 'primary' | 'success' | 'danger'>
   void: 'danger',
 };
 
+function renderProfit(value: string | number) {
+  const n = Number(value);
+  return <span className={`font-medium ${n < 0 ? 'text-danger' : 'text-success'}`}>{formatCurrency(n)}</span>;
+}
+
 /** Kartu faktur untuk mode mobile — seluruh kartu bisa ditekan langsung ke halaman detail. */
-function renderInvoiceCard(row: PosInvoice) {
+function renderInvoiceCard(row: PosInvoice, canSeeProfit: boolean) {
   return (
     <Link
       href={`/dashboard/invoices/${row.id}`}
@@ -77,6 +83,13 @@ function renderInvoiceCard(row: PosInvoice) {
         )}
       </div>
 
+      {canSeeProfit && row.estimated_profit != null && (
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-default-400">Est. Untung</span>
+          {renderProfit(row.estimated_profit)}
+        </div>
+      )}
+
       <p className="text-right text-xs text-default-400">{new Date(row.created_at).toLocaleString('id-ID')}</p>
     </Link>
   );
@@ -84,7 +97,8 @@ function renderInvoiceCard(row: PosInvoice) {
 
 export default function InvoicesPage() {
   const router = useRouter();
-  const { businessId, loading: businessLoading } = useBusinessContext();
+  const { businessId, role, loading: businessLoading } = useBusinessContext();
+  const canSeeProfit = hasMinRole(role ?? '', 'manager');
 
   useNewShortcut(() => router.push('/dashboard/invoices/new'));
 
@@ -162,6 +176,15 @@ export default function InvoicesPage() {
         ),
     },
     { key: 'grand_total', label: 'Total', sortable: true, render: (v) => formatCurrency(v) },
+    ...(canSeeProfit
+      ? [
+          {
+            key: 'estimated_profit',
+            label: 'Est. Untung',
+            render: (v: string | null) => (v == null ? <span className="text-default-400">—</span> : renderProfit(v)),
+          } as GridColumn<PosInvoice>,
+        ]
+      : []),
     {
       key: 'created_at',
       label: 'Dibuat',
@@ -230,7 +253,7 @@ export default function InvoicesPage() {
         defaultSort="created_at:desc"
         rowKey={(row) => row.id}
         emptyState={{ title: 'Belum ada faktur', description: 'Buat faktur pertama untuk mulai transaksi.', icon: <Receipt className="h-8 w-8 text-default-400" /> }}
-        renderCard={renderInvoiceCard}
+        renderCard={(row) => renderInvoiceCard(row, canSeeProfit)}
       />
     </div>
   );

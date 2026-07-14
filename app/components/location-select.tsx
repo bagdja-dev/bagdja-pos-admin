@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { ChevronDown } from 'lucide-react';
 
+import { AppModal } from './app-modal';
 import { apiClient } from '../lib/api-client';
 import { LOCATION_TYPE_LABELS, type GridResult, type PosLocation } from '../lib/types';
-import { PopoverPortal } from './popover-portal';
 
 interface LocationOption {
   id: string;
@@ -27,11 +27,11 @@ interface LocationSelectProps {
 }
 
 /**
- * Dropdown lokasi ala Select2 — field utama murni tombol pemicu (tidak bisa
- * diketik langsung), search box-nya ada DI DALAM menu yang baru muncul saat
- * dibuka. Semua lokasi bisnis di-preload sekali (maks 100, batas grid API)
- * lalu difilter di client saat mengetik di search box tsb, bukan hit server
- * tiap ketikan seperti `AsyncSearchSelect`.
+ * Pemilih lokasi — tombol pemicu membuka modal berisi search box + list
+ * lokasi (bukan dropdown mengambang). Semua lokasi bisnis di-preload sekali
+ * (maks 100, batas grid API) lalu difilter di client saat mengetik — jumlah
+ * lokasi per bisnis realistis kecil sehingga preload sekali lebih simpel &
+ * instan dibanding pencarian server-side.
  */
 export function LocationSelect({
   label,
@@ -50,7 +50,6 @@ export function LocationSelect({
   const [filterText, setFilterText] = useState('');
   const [highlighted, setHighlighted] = useState(0);
 
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -97,15 +96,10 @@ export function LocationSelect({
   function selectOption(opt: LocationOption) {
     onSelect(opt.id, opt.label);
     closeMenu();
-    triggerRef.current?.focus();
   }
 
   function handleSearchKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      closeMenu();
-      triggerRef.current?.focus();
-    } else if (e.key === 'ArrowDown') {
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
       setHighlighted((h) => Math.min(h + 1, filtered.length - 1));
     } else if (e.key === 'ArrowUp') {
@@ -128,21 +122,20 @@ export function LocationSelect({
       )}
 
       <button
-        ref={triggerRef}
         type="button"
         disabled={isDisabled}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(true)}
         className="flex w-full items-center justify-between rounded-lg border border-default-200 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-default-300 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <span className={selected ? 'text-foreground' : 'text-default-400'}>
+        <span className={selected ? 'truncate text-foreground' : 'truncate text-default-400'}>
           {selected ? selected.label : loading ? 'Memuat lokasi...' : (placeholder ?? 'Pilih lokasi...')}
         </span>
         <ChevronDown className="h-4 w-4 shrink-0 text-default-400" />
       </button>
 
-      <PopoverPortal anchorRef={triggerRef} isOpen={open} onClose={closeMenu} matchAnchorWidth>
-        <div className="rounded-lg border border-default-200 bg-white shadow-lg">
-          <div className="border-b border-default-100 p-2">
+      <AppModal isOpen={open} onClose={closeMenu} title={label || 'Pilih Lokasi'} size="sm">
+        <div className="-mx-5 -my-5 flex h-[70vh] max-h-[520px] flex-col sm:-mx-6">
+          <div className="shrink-0 border-b border-default-100 p-3">
             <input
               ref={searchRef}
               value={filterText}
@@ -152,13 +145,12 @@ export function LocationSelect({
               }}
               onKeyDown={handleSearchKeyDown}
               placeholder="Cari lokasi..."
-              // text-base (bukan text-sm) sengaja — di bawah 16px, Safari/Chrome mobile auto-zoom saat fokus.
-              className="w-full rounded-md border border-default-200 px-2 py-1.5 text-base outline-none focus:border-primary"
+              className="w-full rounded-md border border-default-200 px-3 py-2 text-base outline-none focus:border-primary"
             />
           </div>
-          <div className="max-h-60 overflow-auto overscroll-contain py-1 text-sm" role="listbox">
+          <div className="flex-1 overflow-y-auto py-1 text-sm" role="listbox">
             {filtered.length === 0 ? (
-              <div className="px-3 py-2 text-center text-default-400">Tidak ada hasil</div>
+              <div className="px-3 py-4 text-center text-default-400">Tidak ada hasil</div>
             ) : (
               filtered.map((opt, idx) => (
                 <div
@@ -167,7 +159,7 @@ export function LocationSelect({
                   aria-selected={opt.id === selectedId}
                   onMouseEnter={() => setHighlighted(idx)}
                   onClick={() => selectOption(opt)}
-                  className={`flex cursor-pointer flex-col px-3 py-2 ${idx === highlighted ? 'bg-default-100' : ''} ${
+                  className={`flex cursor-pointer flex-col px-4 py-3 active:bg-default-100 ${idx === highlighted ? 'bg-default-100' : ''} ${
                     opt.id === selectedId ? 'font-medium text-primary' : ''
                   }`}
                 >
@@ -178,7 +170,7 @@ export function LocationSelect({
             )}
           </div>
         </div>
-      </PopoverPortal>
+      </AppModal>
     </div>
   );
 }

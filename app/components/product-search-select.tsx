@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-import { useDebouncedValue } from '../hooks/use-debounced-value';
-import { PopoverPortal } from './popover-portal';
+import { AppModal } from './app-modal';
+import { usePagedSearch } from '../hooks/use-paged-search';
 import type { AsyncOption, PagedFetchOptions } from './async-search-select';
 import type { PosInvoiceType, PosProduct } from '../lib/types';
 
@@ -19,17 +19,18 @@ interface ProductSearchSelectProps {
   onSelect: (id: string, label: string, raw?: unknown) => void;
   fetchOptions: PagedFetchOptions;
   invoiceType?: PosInvoiceType;
-  /** Tampilkan baris harga beli di dropdown (mis. cost/margin) — default true, dikontrol via toggle di pemanggil. */
+  /** Tampilkan baris harga beli di modal (mis. cost/margin) — default true, dikontrol via toggle di pemanggil. */
   showPurchasePrice?: boolean;
 }
 
 /**
- * Dropdown pencarian produk ala Select2 — field utama tombol pemicu (tidak
- * bisa diketik langsung), search box + info stok/harga per baris ada DI
- * DALAM menu. Buka pertama kali → 10 produk pertama; ketik → debounce 300ms
- * cari ulang dari halaman 1; scroll list ke bawah → lazy load halaman
- * berikutnya. Bukan reuse `AsyncSearchSelect` karena butuh render per-item
- * yang lebih kaya (stok, harga sesuai tipe faktur) daripada label+deskripsi biasa.
+ * Pencarian produk — tombol pemicu membuka modal berisi search box + list
+ * hasil (info stok/harga per baris), bukan dropdown mengambang. Dipindah
+ * dari pola dropdown karena setelah diuji, dropdown sangat tidak nyaman di
+ * mobile. Buka pertama kali → 10 produk pertama; ketik → debounce 300ms cari
+ * ulang; scroll list ke bawah → lazy load halaman berikutnya. Bukan reuse
+ * `AsyncSearchSelect` karena butuh render per-item yang lebih kaya (stok,
+ * harga sesuai tipe faktur) daripada label+deskripsi biasa.
  */
 export function ProductSearchSelect({
   label,
@@ -43,73 +44,15 @@ export function ProductSearchSelect({
   showPurchasePrice = true,
 }: ProductSearchSelectProps) {
   const [open, setOpen] = useState(false);
-  const [filterText, setFilterText] = useState('');
-  const [items, setItems] = useState<AsyncOption[]>([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [highlighted, setHighlighted] = useState(0);
-
-  const debouncedFilter = useDebouncedValue(filterText, 300);
-  const requestId = useRef(0);
-  const loadingMoreRef = useRef(false);
-
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const myRequest = ++requestId.current;
-    setLoading(true);
-    fetchOptions(debouncedFilter.trim(), 1)
-      .then((res) => {
-        if (myRequest !== requestId.current) return;
-        setItems(res.items);
-        setHasMore(res.hasMore);
-        setPage(1);
-        setHighlighted(0);
-      })
-      .catch(() => {
-        if (myRequest !== requestId.current) return;
-        setItems([]);
-        setHasMore(false);
-      })
-      .finally(() => {
-        if (myRequest !== requestId.current) return;
-        setLoading(false);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, debouncedFilter, fetchOptions]);
+  const { filterText, setFilterText, items, loading, loadingMore, highlighted, setHighlighted, loadMore, reset } =
+    usePagedSearch({ fetchOptions, isActive: open });
 
   useEffect(() => {
     if (open) requestAnimationFrame(() => searchRef.current?.focus());
   }, [open]);
-
-  function loadMore() {
-    if (loadingMoreRef.current || !hasMore) return;
-    loadingMoreRef.current = true;
-    const myRequest = requestId.current;
-    const nextPage = page + 1;
-    setLoadingMore(true);
-    fetchOptions(debouncedFilter.trim(), nextPage)
-      .then((res) => {
-        if (myRequest !== requestId.current) return;
-        setItems((prev) => [...prev, ...res.items]);
-        setHasMore(res.hasMore);
-        setPage(nextPage);
-      })
-      .catch(() => {
-        if (myRequest !== requestId.current) return;
-        setHasMore(false);
-      })
-      .finally(() => {
-        loadingMoreRef.current = false;
-        if (myRequest !== requestId.current) return;
-        setLoadingMore(false);
-      });
-  }
 
   function handleListScroll() {
     const el = listRef.current;
@@ -119,24 +62,16 @@ export function ProductSearchSelect({
 
   function closeMenu() {
     setOpen(false);
-    setFilterText('');
-    setItems([]);
-    setHighlighted(0);
-    requestId.current++;
+    reset();
   }
 
   function selectOption(opt: AsyncOption) {
     onSelect(opt.id, opt.label, opt.raw);
     closeMenu();
-    triggerRef.current?.focus();
   }
 
   function handleSearchKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      closeMenu();
-      triggerRef.current?.focus();
-    } else if (e.key === 'ArrowDown') {
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
       setHighlighted((h) => Math.min(h + 1, items.length - 1));
     } else if (e.key === 'ArrowUp') {
@@ -154,9 +89,8 @@ export function ProductSearchSelect({
       {label && <label className="mb-1 block text-xs text-default-500">{label}</label>}
 
       <button
-        ref={triggerRef}
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(true)}
         className="flex w-full items-center justify-between rounded-lg border border-default-200 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-default-300"
       >
         <span className={selectedLabel ? 'truncate text-foreground' : 'truncate text-default-400'}>
@@ -165,29 +99,28 @@ export function ProductSearchSelect({
         <ChevronDown className="h-4 w-4 shrink-0 text-default-400" />
       </button>
 
-      <PopoverPortal anchorRef={triggerRef} isOpen={open} onClose={closeMenu} matchAnchorWidth>
-        <div className="rounded-lg border border-default-200 bg-white shadow-lg">
-          <div className="border-b border-default-100 p-2">
+      <AppModal isOpen={open} onClose={closeMenu} title={label || 'Cari Produk'} size="md">
+        <div className="-mx-5 -my-5 flex h-[70vh] max-h-[560px] flex-col sm:-mx-6">
+          <div className="shrink-0 border-b border-default-100 p-3">
             <input
               ref={searchRef}
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
               onKeyDown={handleSearchKeyDown}
               placeholder="Cari nama, SKU, atau tag..."
-              // text-base (bukan text-sm) sengaja — di bawah 16px, Safari/Chrome mobile auto-zoom saat fokus.
-              className="w-full rounded-md border border-default-200 px-2 py-1.5 text-base outline-none focus:border-primary"
+              className="w-full rounded-md border border-default-200 px-3 py-2 text-base outline-none focus:border-primary"
             />
           </div>
           <div
             ref={listRef}
             onScroll={handleListScroll}
             role="listbox"
-            className="max-h-72 divide-y divide-default-100 overflow-auto overscroll-contain text-sm"
+            className="flex-1 divide-y divide-default-100 overflow-y-auto text-sm"
           >
             {loading ? (
-              <div className="px-4 py-3 text-center text-default-400">Memuat...</div>
+              <div className="px-4 py-4 text-center text-default-400">Memuat...</div>
             ) : items.length === 0 ? (
-              <div className="px-4 py-3 text-center text-default-400">Tidak ada hasil</div>
+              <div className="px-4 py-4 text-center text-default-400">Tidak ada hasil</div>
             ) : (
               <>
                 {items.map((it, idx) => {
@@ -207,7 +140,7 @@ export function ProductSearchSelect({
                       aria-selected={selectedId === it.id}
                       onMouseEnter={() => setHighlighted(idx)}
                       onClick={() => selectOption(it)}
-                      className={`flex cursor-pointer flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${
+                      className={`flex cursor-pointer flex-col gap-2 px-4 py-3 active:bg-default-100 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${
                         idx === highlighted ? 'bg-default-100' : ''
                       }`}
                     >
@@ -239,7 +172,7 @@ export function ProductSearchSelect({
             )}
           </div>
         </div>
-      </PopoverPortal>
+      </AppModal>
     </div>
   );
 }
