@@ -165,10 +165,7 @@ export function LocationSelect({
                   role="option"
                   aria-selected={opt.id === selectedId}
                   onMouseEnter={() => setHighlighted(idx)}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    selectOption(opt);
-                  }}
+                  onClick={() => selectOption(opt)}
                   className={`flex cursor-pointer flex-col px-3 py-2 ${idx === highlighted ? 'bg-default-100' : ''} ${
                     opt.id === selectedId ? 'font-medium text-primary' : ''
                   }`}

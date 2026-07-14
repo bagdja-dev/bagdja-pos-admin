@@ -237,10 +237,7 @@ export function AsyncSearchSelect({
                     role="option"
                     aria-selected={opt.id === selectedId}
                     onMouseEnter={() => setHighlighted(idx)}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      selectOption(opt);
-                    }}
+                    onClick={() => selectOption(opt)}
                     className={`flex cursor-pointer items-center gap-1.5 px-3 py-2 ${idx === highlighted ? 'bg-default-100' : ''} ${
                       opt.id === CREATE_NEW_KEY ? 'font-medium text-primary' : opt.id === selectedId ? 'font-medium text-primary' : ''
                     }`}

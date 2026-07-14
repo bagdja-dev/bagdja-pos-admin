@@ -64,7 +64,13 @@ export function PopoverPortal({ anchorRef, isOpen, onClose, children, width = 40
       // menutup popover — event `scroll` tidak bubble tapi tetap kena listener
       // capture-phase ini, jadi tanpa guard ini scroll di list langsung menutup
       // dropdown-nya (terasa seperti "tidak bisa discroll", terutama di mobile).
-      if (popoverRef.current?.contains(e.target as Node)) return;
+      if (e.type === 'scroll' && popoverRef.current?.contains(e.target as Node)) return;
+      // Resize juga ditembakkan browser mobile saat keyboard virtual muncul/hilang
+      // (tinggi viewport berubah). Kalau fokus sedang ada di dalam popover (mis.
+      // search box), anggap resize ini akibat keyboard, bukan perubahan layout
+      // beneran — jangan tutup. Tanpa guard ini, tap ke search box langsung
+      // menutup dropdown-nya sendiri begitu keyboard muncul.
+      if (e.type === 'resize' && popoverRef.current?.contains(document.activeElement)) return;
       onClose();
     }
 

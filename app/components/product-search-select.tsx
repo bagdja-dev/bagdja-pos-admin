@@ -205,10 +205,7 @@ export function ProductSearchSelect({
                       role="option"
                       aria-selected={selectedId === it.id}
                       onMouseEnter={() => setHighlighted(idx)}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        selectOption(it);
-                      }}
+                      onClick={() => selectOption(it)}
                       className={`flex cursor-pointer flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${
                         idx === highlighted ? 'bg-default-100' : ''
                       }`}
