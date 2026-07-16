@@ -10,6 +10,18 @@ import type { PosInvoiceType, PosProduct } from '../lib/types';
 
 const LOAD_MORE_THRESHOLD = 48;
 
+/**
+ * Label produk berformat "Nama Barang (SKU)" — kalau nama-nya panjang,
+ * truncate biasa (ellipsis di akhir) menyembunyikan SKU yang justru paling
+ * penting buat identifikasi. Pecah di "(" terakhir supaya bagian SKU selalu
+ * utuh terlihat, dan ellipsis jatuh di antara nama & SKU (bukan di akhir).
+ */
+function splitProductLabel(label: string): { head: string; tail: string } {
+  const idx = label.lastIndexOf(' (');
+  if (idx === -1) return { head: label, tail: '' };
+  return { head: label.slice(0, idx), tail: label.slice(idx) };
+}
+
 interface ProductSearchSelectProps {
   label?: string;
   placeholder?: string;
@@ -84,6 +96,8 @@ export function ProductSearchSelect({
     }
   }
 
+  const { head, tail } = selectedLabel ? splitProductLabel(selectedLabel) : { head: '', tail: '' };
+
   return (
     <div className={className}>
       {label && <label className="mb-1 block text-xs text-default-500">{label}</label>}
@@ -93,9 +107,14 @@ export function ProductSearchSelect({
         onClick={() => setOpen(true)}
         className="flex w-full items-center justify-between rounded-lg border border-default-200 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-default-300"
       >
-        <span className={selectedLabel ? 'truncate text-foreground' : 'truncate text-default-400'}>
-          {selectedLabel || placeholder || 'Cari produk...'}
-        </span>
+        {selectedLabel ? (
+          <span className="flex min-w-0 flex-1 text-foreground">
+            <span className="truncate">{head}</span>
+            <span className="shrink-0 whitespace-nowrap">{tail}</span>
+          </span>
+        ) : (
+          <span className="truncate text-default-400">{placeholder || 'Cari produk...'}</span>
+        )}
         <ChevronDown className="h-4 w-4 shrink-0 text-default-400" />
       </button>
 
