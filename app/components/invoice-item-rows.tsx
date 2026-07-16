@@ -100,33 +100,36 @@ export function ItemRowsEditor({ items, onChange, invoiceType, fetchProductOptio
         return (
           <div
             key={idx}
-            className="flex flex-col gap-2 border-b border-default-100 pb-3 last:border-0 md:flex-row md:items-end md:border-0 md:pb-0"
+            className="grid grid-cols-1 gap-2 border-b border-default-100 pb-3 last:border-0 md:grid-cols-[minmax(0,1fr)_6rem_11rem_8rem_5.5rem] md:items-center md:gap-x-2 md:gap-y-0 md:border-0 md:pb-0"
           >
             <ProductSearchSelect
               label=""
               placeholder="Cari nama, SKU, atau tag..."
-              className="w-full md:flex-1"
+              className="min-w-0 w-full"
               selectedId={item.product_id}
               selectedLabel={item.product_label}
               onSelect={(id, label, raw) => selectProduct(idx, id, label, raw)}
               invoiceType={invoiceType}
               fetchOptions={fetchProductOptions}
             />
-            <div className="flex items-end gap-2">
+            {/* `md:contents` melepas div ini dari box model di layar md+ supaya
+                anak-anaknya jadi grid item langsung (mengisi kolom qty/harga/
+                total/hapus di atas) — di mobile tetap flex row seperti biasa. */}
+            <div className="flex items-end gap-2 md:contents">
               <NumberInput
                 label=""
-                className="w-20 md:w-24"
+                className="w-20 md:w-full"
                 value={item.quantity}
                 onValueChange={(v) => updateItem(idx, { quantity: v })}
               />
               <CurrencyInput
                 label=""
-                className="flex-1 md:w-44"
+                className="flex-1 md:w-full"
                 value={item.adjusted_price}
                 onValueChange={(v) => updateItem(idx, { adjusted_price: v })}
                 tone={tone}
               />
-              <div className="hidden shrink-0 pb-2.5 text-right text-sm text-default-500 md:block md:w-32">
+              <div className="hidden shrink-0 pb-2.5 text-right text-sm text-default-500 md:block md:pb-0">
                 {formatCurrency(rowTotal)}
               </div>
               <Button
