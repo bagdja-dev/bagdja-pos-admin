@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Button, Chip, Input, Switch, Tooltip } from '@heroui/react';
-import { Package, Pencil, Trash2 } from 'lucide-react';
+import { Package, Pencil, ScanBarcode, Trash2 } from 'lucide-react';
 
 import { AppModal } from '../../components/app-modal';
 import { CurrencyInput } from '../../components/currency-input';
@@ -27,6 +28,11 @@ const EMPTY_FORM = {
   is_active: true,
 };
 
+const BarcodeScannerModal = dynamic(
+  () => import('../../components/barcode-scanner-modal').then((m) => m.BarcodeScannerModal),
+  { ssr: false },
+);
+
 function formatCurrency(value: string) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
     Number(value),
@@ -36,6 +42,7 @@ function formatCurrency(value: string) {
 export default function ProductsPage() {
   const { businessId, role, loading: businessLoading } = useBusinessContext();
   const [modalOpen, setModalOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [editing, setEditing] = useState<PosProduct | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -74,6 +81,11 @@ export default function ProductsPage() {
     });
     setError(null);
     setModalOpen(true);
+  }
+
+  function handleScanSku(value: string) {
+    setForm((f) => ({ ...f, sku: value }));
+    setScannerOpen(false);
   }
 
   async function handleSave() {
@@ -265,7 +277,18 @@ export default function ProductsPage() {
         }
       >
         <div className="space-y-4">
-          <Input label="SKU" value={form.sku} onValueChange={(v) => setForm((f) => ({ ...f, sku: v }))} isRequired />
+          <div className="flex items-end gap-2">
+            <Input
+              label="SKU"
+              value={form.sku}
+              onValueChange={(v) => setForm((f) => ({ ...f, sku: v }))}
+              isRequired
+              className="flex-1"
+            />
+            <Button isIconOnly variant="flat" onPress={() => setScannerOpen(true)} aria-label="Scan barcode/QR SKU">
+              <ScanBarcode className="h-4 w-4" />
+            </Button>
+          </div>
           <Input
             label="Nama Produk"
             value={form.name}
@@ -299,6 +322,10 @@ export default function ProductsPage() {
           {error && <p className="text-sm text-danger">{error}</p>}
         </div>
       </AppModal>
+
+      {scannerOpen && (
+        <BarcodeScannerModal isOpen={scannerOpen} onClose={() => setScannerOpen(false)} onScan={handleScanSku} />
+      )}
     </div>
   );
 }
