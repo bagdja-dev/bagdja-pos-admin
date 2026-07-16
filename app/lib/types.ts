@@ -259,6 +259,7 @@ export interface PosPaymentLedger {
   invoice_id: string;
   invoice?: PosInvoice;
   partner_id: string;
+  partner?: PosContact;
   entry_type: 'invoice_issued' | 'payment' | 'adjustment' | 'charge';
   payment_method: PosPaymentMethod | null;
   proof_photo_url: string | null;

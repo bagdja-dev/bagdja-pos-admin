@@ -118,6 +118,7 @@ export default function CashSummaryLocationDetailPage() {
       ),
     },
     { key: 'entry_type', label: 'Tipe', render: (v) => entryTypeLabel(v) },
+    { key: 'partner_id', label: 'Kontak', render: (_v, row) => row.partner?.name ?? '—' },
     { key: 'payment_method', label: 'Metode', render: (v) => v ?? '—' },
     { key: 'debit', label: 'Kas Keluar', sortable: true, render: (v) => formatCurrency(v) },
     { key: 'kredit', label: 'Kas Masuk', sortable: true, render: (v) => formatCurrency(v) },
