@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 
 import { AppModal } from './app-modal';
@@ -17,21 +17,36 @@ export function BarcodeScannerModal({ isOpen, onClose, onScan }: BarcodeScannerM
   const [error, setError] = useState<string | null>(null);
   const onScanRef = useRef(onScan);
   onScanRef.current = onScan;
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannedRef = useRef(false);
 
-  useEffect(() => {
-    if (!isOpen) return;
+  // Callback ref (bukan useEffect) karena elemen target di-render lewat
+  // AppModal (portal + mounted-gate internal) — id-nya belum pasti ada di
+  // DOM tepat saat komponen ini pertama kali render. Callback ref hanya
+  // dipanggil React setelah node itu benar-benar ter-attach ke DOM, jadi
+  // Html5Qrcode aman dikonstruksi di sini.
+  const containerRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node) {
+      scannerRef.current
+        ?.stop()
+        .then(() => scannerRef.current?.clear())
+        .catch(() => {});
+      scannerRef.current = null;
+      return;
+    }
 
     setError(null);
-    const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
-    let stopped = false;
+    scannedRef.current = false;
+    const scanner = new Html5Qrcode(node.id);
+    scannerRef.current = scanner;
 
     scanner
       .start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 250, height: 250 } },
         (decodedText) => {
-          if (stopped) return;
-          stopped = true;
+          if (scannedRef.current) return;
+          scannedRef.current = true;
           onScanRef.current(decodedText);
         },
         () => {
@@ -41,17 +56,12 @@ export function BarcodeScannerModal({ isOpen, onClose, onScan }: BarcodeScannerM
       .catch(() => {
         setError('Tidak bisa mengakses kamera. Pastikan izin kamera sudah diberikan ke browser.');
       });
-
-    return () => {
-      stopped = true;
-      scanner.stop().then(() => scanner.clear()).catch(() => {});
-    };
-  }, [isOpen]);
+  }, []);
 
   return (
     <AppModal isOpen={isOpen} onClose={onClose} title="Scan Barcode / QR Code" size="sm">
       <div className="space-y-3">
-        <div id={SCANNER_ELEMENT_ID} className="w-full overflow-hidden rounded-lg bg-default-100" />
+        <div ref={containerRef} id={SCANNER_ELEMENT_ID} className="w-full overflow-hidden rounded-lg bg-default-100" />
         {error && <p className="text-sm text-danger">{error}</p>}
         <p className="text-xs text-default-500">Arahkan kamera ke barcode atau QR code pada produk.</p>
       </div>
