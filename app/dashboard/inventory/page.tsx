@@ -15,6 +15,7 @@ import {
   type GridResult,
   type PosProduct,
   type ProductStockDistribution,
+  type RackForProduct,
 } from '../../lib/types';
 
 interface SelectedProduct {
@@ -29,6 +30,7 @@ export default function InventoryDashboardPage() {
   const [selectedProduct, setSelectedProduct] = useState<SelectedProduct | null>(null);
   const [distribution, setDistribution] = useState<ProductStockDistribution | null>(null);
   const [loadingDistribution, setLoadingDistribution] = useState(false);
+  const [racks, setRacks] = useState<RackForProduct[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchProductOptions = useCallback(
@@ -53,6 +55,7 @@ export default function InventoryDashboardPage() {
   useEffect(() => {
     if (!businessId || !selectedProduct) {
       setDistribution(null);
+      setRacks(null);
       return;
     }
     setLoadingDistribution(true);
@@ -61,6 +64,9 @@ export default function InventoryDashboardPage() {
       .then(setDistribution)
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Gagal memuat sebaran stok'))
       .finally(() => setLoadingDistribution(false));
+    apiClient<RackForProduct[]>(`/api/businesses/${businessId}/products/${selectedProduct.id}/racks`)
+      .then(setRacks)
+      .catch(() => setRacks([]));
   }, [businessId, selectedProduct]);
 
   if (businessLoading) return <LoadingSpinner />;
@@ -128,6 +134,30 @@ export default function InventoryDashboardPage() {
               })}
             </TableBody>
           </Table>
+
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-default-500">Rak</p>
+            {racks && racks.length > 0 ? (
+              <Table aria-label="Sebaran rak">
+                <TableHeader>
+                  <TableColumn>LOKASI</TableColumn>
+                  <TableColumn>RAK</TableColumn>
+                  <TableColumn>QTY</TableColumn>
+                </TableHeader>
+                <TableBody>
+                  {racks.map((r) => (
+                    <TableRow key={r.rackId}>
+                      <TableCell>{r.locationName}</TableCell>
+                      <TableCell>{r.rackCode}{r.rackName ? ` — ${r.rackName}` : ''}</TableCell>
+                      <TableCell>{r.qty}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-default-500">Belum dialokasikan ke rak manapun.</p>
+            )}
+          </div>
         </div>
       ) : (
         <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-default-200 bg-default-50 p-8 text-center">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import Link from 'next/link';
 import { Button, Chip, Input, Select, SelectItem, Switch, Textarea } from '@heroui/react';
 import { MapPin } from 'lucide-react';
 
@@ -102,6 +103,15 @@ export default function LocationsPage() {
         <Chip size="sm" color={v ? 'success' : 'default'} variant="flat">
           {v ? 'Aktif' : 'Nonaktif'}
         </Chip>
+      ),
+    },
+    {
+      key: 'racks',
+      label: 'Rak',
+      render: (_: unknown, row: PosLocation) => (
+        <Button as={Link} href={`/dashboard/locations/${row.id}/racks`} size="sm" variant="flat">
+          Kelola Rak
+        </Button>
       ),
     },
     ...(canEdit

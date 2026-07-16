@@ -162,6 +162,36 @@ export interface ProductStockDistribution {
   total: number;
 }
 
+export interface PosRack {
+  id: string;
+  business_id: string;
+  location_id: string;
+  code: string;
+  name: string | null;
+  pick_queue: number | null;
+  is_default_received: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface PosRackProduct {
+  id: string;
+  rack_id: string;
+  product_id: string;
+  product?: PosProduct;
+  qty: number;
+  updated_at: string;
+}
+
+export interface RackForProduct {
+  rackId: string;
+  rackCode: string;
+  rackName: string | null;
+  locationId: string;
+  locationName: string;
+  qty: number;
+}
+
 export type PosInvoiceType = 'sale' | 'purchase' | 'transfer' | 'capital' | 'withdrawal';
 export type PosInvoiceFlow = 'in' | 'out';
 export type PosInvoicePartyType = 'customer' | 'supplier' | 'outlet' | 'lender';
