@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { Button, Input, Select, SelectItem } from '@heroui/react';
-import { Users } from 'lucide-react';
+import { Plus, Trash2, Users } from 'lucide-react';
 
 import { AppModal } from '../../components/app-modal';
 import { DataGrid, type GridColumn } from '../../components/data-grid';
@@ -11,9 +11,15 @@ import { NoBusinessState } from '../../components/no-business-state';
 import { useNewShortcut } from '../../hooks/use-new-shortcut';
 import { apiClient, ApiError, buildGridQueryString } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
-import { hasMinRole, type GridResult, type PosContact, type PosContactType } from '../../lib/types';
+import { hasMinRole, type GridResult, type PosContact, type PosContactBankAccount, type PosContactType } from '../../lib/types';
 
-const EMPTY_FORM = { type: 'customer' as PosContactType, name: '', phone: '', plate_number: '' };
+const EMPTY_FORM = {
+  type: 'customer' as PosContactType,
+  name: '',
+  phone: '',
+  plate_number: '',
+  bank_accounts: [] as PosContactBankAccount[],
+};
 
 const CONTACT_TYPE_LABELS: Record<PosContactType, string> = {
   customer: 'Pelanggan',
@@ -52,25 +58,47 @@ export default function ContactsPage() {
 
   function openEdit(c: PosContact) {
     setEditing(c);
-    setForm({ type: c.type, name: c.name, phone: c.phone ?? '', plate_number: c.plate_number ?? '' });
+    setForm({
+      type: c.type,
+      name: c.name,
+      phone: c.phone ?? '',
+      plate_number: c.plate_number ?? '',
+      bank_accounts: c.bank_accounts ?? [],
+    });
     setError(null);
     setModalOpen(true);
   }
 
+  function addBankAccount() {
+    setForm((f) => ({ ...f, bank_accounts: [...f.bank_accounts, { bank: '', no_rekening: '' }] }));
+  }
+
+  function updateBankAccount(index: number, patch: Partial<PosContactBankAccount>) {
+    setForm((f) => ({
+      ...f,
+      bank_accounts: f.bank_accounts.map((acc, i) => (i === index ? { ...acc, ...patch } : acc)),
+    }));
+  }
+
+  function removeBankAccount(index: number) {
+    setForm((f) => ({ ...f, bank_accounts: f.bank_accounts.filter((_, i) => i !== index) }));
+  }
+
   async function handleSave() {
     if (!businessId || !form.name.trim()) return;
+    const bank_accounts = form.bank_accounts.filter((acc) => acc.bank.trim() && acc.no_rekening.trim());
     setSaving(true);
     setError(null);
     try {
       if (editing) {
         await apiClient(`/api/businesses/${businessId}/contacts/${editing.id}`, {
           method: 'PATCH',
-          body: JSON.stringify({ name: form.name, phone: form.phone, plate_number: form.plate_number }),
+          body: JSON.stringify({ name: form.name, phone: form.phone, plate_number: form.plate_number, bank_accounts }),
         });
       } else {
         await apiClient(`/api/businesses/${businessId}/contacts`, {
           method: 'POST',
-          body: JSON.stringify(form),
+          body: JSON.stringify({ ...form, bank_accounts }),
         });
       }
       setModalOpen(false);
@@ -122,7 +150,12 @@ export default function ContactsPage() {
     { key: 'type', label: 'Tipe', sortable: true, render: (v: PosContactType) => CONTACT_TYPE_LABELS[v] },
     { key: 'phone', label: 'Telepon', render: (v) => v ?? '—' },
     { key: 'plate_number', label: 'Plat Nomor', render: (v) => v ?? '—' },
-
+    {
+      key: 'bank_accounts',
+      label: 'Info Rekening',
+      render: (v: PosContactBankAccount[]) =>
+        v && v.length > 0 ? v.map((acc) => `${acc.bank} - ${acc.no_rekening}`).join(', ') : '—',
+    },
   ];
 
   return (
@@ -201,6 +234,35 @@ export default function ContactsPage() {
               onValueChange={(v) => setForm((f) => ({ ...f, plate_number: v }))}
             />
           )}
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-foreground">Info Rekening</span>
+              <Button size="sm" variant="flat" startContent={<Plus className="h-4 w-4" />} onPress={addBankAccount}>
+                Tambah Rekening
+              </Button>
+            </div>
+            {form.bank_accounts.map((acc, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <Input
+                  size="sm"
+                  placeholder="Bank"
+                  value={acc.bank}
+                  onValueChange={(v) => updateBankAccount(i, { bank: v })}
+                />
+                <Input
+                  size="sm"
+                  placeholder="No. Rekening"
+                  value={acc.no_rekening}
+                  onValueChange={(v) => updateBankAccount(i, { no_rekening: v })}
+                />
+                <Button isIconOnly size="sm" variant="flat" color="danger" onPress={() => removeBankAccount(i)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
           {error && <p className="text-sm text-danger">{error}</p>}
         </div>
       </AppModal>

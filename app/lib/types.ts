@@ -99,6 +99,11 @@ export interface PosStaffInvitation {
 
 export type PosContactType = 'customer' | 'supplier' | 'lender';
 
+export interface PosContactBankAccount {
+  bank: string;
+  no_rekening: string;
+}
+
 export interface PosContact {
   id: string;
   business_id: string;
@@ -106,6 +111,7 @@ export interface PosContact {
   name: string;
   phone: string | null;
   plate_number: string | null;
+  bank_accounts: PosContactBankAccount[];
   created_at: string;
 }
 
