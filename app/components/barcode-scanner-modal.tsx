@@ -43,7 +43,17 @@ export function BarcodeScannerModal({ isOpen, onClose, onScan }: BarcodeScannerM
     scanner
       .start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        {
+          fps: 10,
+          // Fungsi (bukan angka tetap) supaya qrbox selalu proporsional dengan
+          // ukuran video yang sebenarnya dirender — qrbox tetap yang lebih besar
+          // dari viewfinder bikin area scan tidak sejajar dengan video, jadi
+          // kamera terlihat jalan tapi tidak pernah berhasil membaca kode.
+          qrbox: (viewfinderWidth, viewfinderHeight) => {
+            const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.7);
+            return { width: size, height: size };
+          },
+        },
         (decodedText) => {
           if (scannedRef.current) return;
           scannedRef.current = true;
@@ -61,7 +71,11 @@ export function BarcodeScannerModal({ isOpen, onClose, onScan }: BarcodeScannerM
   return (
     <AppModal isOpen={isOpen} onClose={onClose} title="Scan Barcode / QR Code" size="sm">
       <div className="space-y-3">
-        <div ref={containerRef} id={SCANNER_ELEMENT_ID} className="w-full overflow-hidden rounded-lg bg-default-100" />
+        <div
+          ref={containerRef}
+          id={SCANNER_ELEMENT_ID}
+          className="aspect-square w-full overflow-hidden rounded-lg bg-default-100"
+        />
         {error && <p className="text-sm text-danger">{error}</p>}
         <p className="text-xs text-default-500">Arahkan kamera ke barcode atau QR code pada produk.</p>
       </div>
