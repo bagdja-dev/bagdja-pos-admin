@@ -69,7 +69,7 @@ export default function NewInvoicePage() {
   const [stagedAttachments, setStagedAttachments] = useState<File[]>([]);
   const [staff, setStaff] = useState<PosStaff[]>([]);
 
-  const [saving, setSaving] = useState(false);
+  const [savingAction, setSavingAction] = useState<'draft' | 'submit' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [contactModalOpen, setContactModalOpen] = useState(false);
@@ -172,7 +172,7 @@ export default function NewInvoicePage() {
 
   const estimatedProfit = type === 'sale' ? calcEstimatedProfit(items) - discountValue : null;
 
-  async function handleSubmit() {
+  async function handleSubmit(alsoSubmit: boolean) {
     if (!businessId || !locationId || !partyId) {
       setError('Lokasi dan pihak terkait wajib diisi');
       return;
@@ -195,7 +195,7 @@ export default function NewInvoicePage() {
     const validItems = items.filter((i) => i.product_id && Number(i.quantity) > 0);
     const validServices = type !== 'transfer' ? services.filter((s) => s.label.trim() && Number(s.amount) > 0) : [];
 
-    setSaving(true);
+    setSavingAction(alsoSubmit ? 'submit' : 'draft');
     setError(null);
     try {
       const invoice = await apiClient<PosInvoice>(`/api/businesses/${businessId}/invoices`, {
@@ -246,11 +246,23 @@ export default function NewInvoicePage() {
         }
       }
 
+      if (alsoSubmit) {
+        try {
+          await apiClient(`/api/businesses/${businessId}/invoices/${invoice.id}/submit`, { method: 'POST' });
+        } catch (err) {
+          alert(
+            `Faktur tersimpan sebagai draft, tapi gagal disubmit otomatis: ${
+              err instanceof ApiError ? err.message : 'terjadi kesalahan'
+            }. Submit manual dari halaman detail faktur.`,
+          );
+        }
+      }
+
       router.push(`/dashboard/invoices/${invoice.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Gagal membuat faktur');
     } finally {
-      setSaving(false);
+      setSavingAction(null);
     }
   }
 
@@ -385,9 +397,26 @@ export default function NewInvoicePage() {
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <Button color="primary" fullWidth isLoading={saving} onPress={handleSubmit}>
-        Simpan sebagai Draft
-      </Button>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Button
+          variant="flat"
+          className="flex-1"
+          isLoading={savingAction === 'draft'}
+          isDisabled={savingAction !== null}
+          onPress={() => handleSubmit(false)}
+        >
+          Simpan sebagai Draft
+        </Button>
+        <Button
+          color="primary"
+          className="flex-1"
+          isLoading={savingAction === 'submit'}
+          isDisabled={savingAction !== null}
+          onPress={() => handleSubmit(true)}
+        >
+          Simpan & Submit
+        </Button>
+      </div>
 
       {businessId && PARTY_FIELD[type].contactType && (
         <QuickAddContactModal

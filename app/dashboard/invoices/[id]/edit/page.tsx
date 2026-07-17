@@ -62,7 +62,7 @@ export default function EditInvoicePage() {
   const [staff, setStaff] = useState<PosStaff[]>([]);
 
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingAction, setSavingAction] = useState<'draft' | 'submit' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [contactModalOpen, setContactModalOpen] = useState(false);
@@ -170,7 +170,7 @@ export default function EditInvoicePage() {
 
   const estimatedProfit = invoice?.type === 'sale' ? calcEstimatedProfit(items) - discountValue : null;
 
-  async function handleSubmit() {
+  async function handleSubmit(alsoSubmit: boolean) {
     if (!businessId || !invoice || !partyId) return;
 
     if (isAmountBasedType(invoice.type)) {
@@ -190,7 +190,7 @@ export default function EditInvoicePage() {
     const validItems = items.filter((i) => i.product_id && Number(i.quantity) > 0);
     const validServices = invoice.type !== 'transfer' ? services.filter((s) => s.label.trim() && Number(s.amount) > 0) : [];
 
-    setSaving(true);
+    setSavingAction(alsoSubmit ? 'submit' : 'draft');
     setError(null);
     try {
       await apiClient(`/api/businesses/${businessId}/invoices/${invoice.id}`, {
@@ -220,11 +220,24 @@ export default function EditInvoicePage() {
           ...(showDiscount ? { discount: discountValue } : {}),
         }),
       });
+
+      if (alsoSubmit) {
+        try {
+          await apiClient(`/api/businesses/${businessId}/invoices/${invoice.id}/submit`, { method: 'POST' });
+        } catch (err) {
+          alert(
+            `Perubahan tersimpan, tapi gagal disubmit otomatis: ${
+              err instanceof ApiError ? err.message : 'terjadi kesalahan'
+            }. Submit manual dari halaman detail faktur.`,
+          );
+        }
+      }
+
       router.push(`/dashboard/invoices/${invoice.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Gagal menyimpan perubahan');
     } finally {
-      setSaving(false);
+      setSavingAction(null);
     }
   }
 
@@ -352,12 +365,31 @@ export default function EditInvoicePage() {
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <div className="flex gap-3">
-        <Button variant="flat" onPress={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Button
+          variant="flat"
+          isDisabled={savingAction !== null}
+          onPress={() => router.push(`/dashboard/invoices/${invoice.id}`)}
+        >
           Batal
         </Button>
-        <Button color="primary" className="flex-1" isLoading={saving} onPress={handleSubmit}>
+        <Button
+          variant="flat"
+          className="flex-1"
+          isLoading={savingAction === 'draft'}
+          isDisabled={savingAction !== null}
+          onPress={() => handleSubmit(false)}
+        >
           Simpan Perubahan
+        </Button>
+        <Button
+          color="primary"
+          className="flex-1"
+          isLoading={savingAction === 'submit'}
+          isDisabled={savingAction !== null}
+          onPress={() => handleSubmit(true)}
+        >
+          Simpan & Submit
         </Button>
       </div>
 
