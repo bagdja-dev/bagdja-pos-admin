@@ -19,6 +19,7 @@ import {
 
 import { AppModal } from '../../../components/app-modal';
 import { CurrencyInput } from '../../../components/currency-input';
+import { InvoiceAttachmentsUploader } from '../../../components/invoice-attachments-uploader';
 import { LoadingSpinner } from '../../../components/loading-spinner';
 import { NumberInput } from '../../../components/number-input';
 import { NoBusinessState } from '../../../components/no-business-state';
@@ -327,6 +328,8 @@ export default function InvoiceDetailPage() {
           <p className="whitespace-pre-wrap text-sm text-foreground">{invoice.note}</p>
         </div>
       )}
+
+      {businessId && <InvoiceAttachmentsUploader businessId={businessId} invoiceId={invoice.id} readOnly />}
 
       <div className="flex flex-wrap gap-2">
         {invoice.status === 'draft' && (

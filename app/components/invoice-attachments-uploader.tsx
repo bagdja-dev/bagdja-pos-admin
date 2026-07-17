@@ -19,6 +19,8 @@ interface InvoiceAttachmentsUploaderProps {
   invoiceId?: string;
   stagedFiles?: File[];
   onStagedFilesChange?: (files: File[]) => void;
+  /** Mode lihat saja (dipakai halaman detail faktur) — sembunyikan tombol tambah/hapus, cuma tampilkan link buka file. Kalau tidak ada lampiran, komponen tidak render apa-apa. */
+  readOnly?: boolean;
 }
 
 const ACCEPT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'];
@@ -46,6 +48,7 @@ export function InvoiceAttachmentsUploader({
   invoiceId,
   stagedFiles = [],
   onStagedFilesChange,
+  readOnly = false,
 }: InvoiceAttachmentsUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const isLive = Boolean(invoiceId);
@@ -131,9 +134,18 @@ export function InvoiceAttachmentsUploader({
 
   const items = isLive ? attachments : stagedFiles;
 
+  // Mode lihat saja: kalau belum selesai loading, tampilkan status singkat;
+  // kalau sudah selesai dan kosong, tidak render apa-apa (tidak ada yang perlu ditampilkan).
+  if (readOnly) {
+    if (loading) return <p className="text-sm text-default-400">Memuat lampiran...</p>;
+    if (attachments.length === 0) return null;
+  }
+
   return (
     <div className="space-y-2">
-      <label className="px-1 text-xs font-medium text-default-600">Lampiran Faktur Asli (opsional)</label>
+      <label className="px-1 text-xs font-medium text-default-600">
+        Lampiran Faktur Asli{!readOnly && ' (opsional)'}
+      </label>
 
       {loading ? (
         <p className="text-sm text-default-400">Memuat lampiran...</p>
@@ -154,14 +166,16 @@ export function InvoiceAttachmentsUploader({
                   >
                     {a.file_name}
                   </a>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveLive(a)}
-                    className="rounded p-1 text-default-400 hover:bg-default-200 hover:text-danger"
-                    aria-label="Hapus lampiran"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveLive(a)}
+                      className="rounded p-1 text-default-400 hover:bg-default-200 hover:text-danger"
+                      aria-label="Hapus lampiran"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               ))
             : stagedFiles.map((file, i) => (
@@ -185,25 +199,29 @@ export function InvoiceAttachmentsUploader({
         </div>
       ) : null}
 
-      <Button
-        variant="flat"
-        size="sm"
-        isLoading={uploading}
-        startContent={!uploading ? <Paperclip className="h-4 w-4" /> : undefined}
-        onPress={() => inputRef.current?.click()}
-      >
-        {uploading ? 'Mengunggah...' : 'Tambah Lampiran'}
-      </Button>
-      <p className="text-xs text-default-400">Gambar atau PDF, maksimal 10 MB per file, bisa pilih lebih dari satu sekaligus.</p>
+      {!readOnly && (
+        <>
+          <Button
+            variant="flat"
+            size="sm"
+            isLoading={uploading}
+            startContent={!uploading ? <Paperclip className="h-4 w-4" /> : undefined}
+            onPress={() => inputRef.current?.click()}
+          >
+            {uploading ? 'Mengunggah...' : 'Tambah Lampiran'}
+          </Button>
+          <p className="text-xs text-default-400">Gambar atau PDF, maksimal 10 MB per file, bisa pilih lebih dari satu sekaligus.</p>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept={ACCEPT}
-        multiple
-        className="hidden"
-        onChange={(e) => handleFilesSelected(e.target.files)}
-      />
+          <input
+            ref={inputRef}
+            type="file"
+            accept={ACCEPT}
+            multiple
+            className="hidden"
+            onChange={(e) => handleFilesSelected(e.target.files)}
+          />
+        </>
+      )}
 
       {error && <p className="text-xs text-danger">{error}</p>}
     </div>
