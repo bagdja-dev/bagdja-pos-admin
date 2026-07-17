@@ -10,7 +10,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <BusinessProvider>
-      <div className="flex h-screen overflow-hidden bg-background">
+      {/* `h-dvh` (bukan `h-screen`/100vh) — di mobile, 100vh dihitung dari
+          tinggi viewport MAKSIMAL (toolbar browser tersembunyi), jadi container
+          ini jadi lebih tinggi dari area yang benar-benar terlihat saat toolbar
+          muncul, memaksa seluruh halaman (termasuk header `sticky`) ikut
+          ter-scroll di level body. `100dvh` mengikuti tinggi viewport yang
+          benar-benar terlihat saat itu, jadi body tidak pernah perlu scroll —
+          cuma `<main>` di bawah yang scroll internal, header selalu diam. */}
+      <div className="flex h-dvh overflow-hidden bg-background">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         <div className="flex flex-1 flex-col overflow-hidden">
