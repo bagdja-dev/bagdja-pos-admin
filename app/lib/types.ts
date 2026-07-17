@@ -283,6 +283,15 @@ export interface PosInvoice {
   refInvoice?: PosInvoice | null;
 }
 
+export interface PosInvoiceAttachment {
+  id: string;
+  invoice_id: string;
+  file_url: string;
+  file_name: string;
+  mime_type: string;
+  created_at: string;
+}
+
 export type PosPaymentMethod = 'cash' | 'transfer';
 
 export interface PosPaymentLedger {

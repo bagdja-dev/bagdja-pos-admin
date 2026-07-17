@@ -6,6 +6,7 @@ import { Button, Textarea } from '@heroui/react';
 
 import { AsyncSearchSelect, type PagedFetchResult } from '../../../../components/async-search-select';
 import { CurrencyInput } from '../../../../components/currency-input';
+import { InvoiceAttachmentsUploader } from '../../../../components/invoice-attachments-uploader';
 import { LocationSelect } from '../../../../components/location-select';
 import {
   EMPTY_ITEM_ROW,
@@ -339,6 +340,8 @@ export default function EditInvoicePage() {
           )}
         </>
       )}
+
+      <InvoiceAttachmentsUploader businessId={businessId} invoiceId={invoice.id} />
 
       <Textarea
         label="Catatan (opsional)"

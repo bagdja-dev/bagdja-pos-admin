@@ -6,6 +6,7 @@ import { Button, Select, SelectItem, Textarea } from '@heroui/react';
 
 import { AsyncSearchSelect, type PagedFetchResult } from '../../../components/async-search-select';
 import { CurrencyInput } from '../../../components/currency-input';
+import { InvoiceAttachmentsUploader } from '../../../components/invoice-attachments-uploader';
 import { LocationSelect } from '../../../components/location-select';
 import {
   EMPTY_ITEM_ROW,
@@ -65,6 +66,7 @@ export default function NewInvoicePage() {
   const [amount, setAmount] = useState('0');
   const [discount, setDiscount] = useState('0');
   const [note, setNote] = useState('');
+  const [stagedAttachments, setStagedAttachments] = useState<File[]>([]);
   const [staff, setStaff] = useState<PosStaff[]>([]);
 
   const [saving, setSaving] = useState(false);
@@ -225,6 +227,25 @@ export default function NewInvoicePage() {
           ...(note.trim() ? { note: note.trim() } : {}),
         }),
       });
+
+      // Faktur baru berhasil dibuat — baru sekarang upload lampiran yang
+      // sebelumnya cuma dipilih lokal (belum ada invoice.id sebelum ini).
+      // Gagal upload lampiran TIDAK membatalkan faktur yang sudah tersimpan —
+      // cukup ditampilkan sebagai alert, tetap lanjut ke halaman detail.
+      for (const file of stagedAttachments) {
+        try {
+          const form = new FormData();
+          form.append('file', file);
+          const res = await fetch(
+            `/api/uploads/invoice-attachment?businessId=${businessId}&invoiceId=${invoice.id}`,
+            { method: 'POST', body: form },
+          );
+          if (!res.ok) throw new Error();
+        } catch {
+          alert(`Faktur tersimpan, tapi gagal unggah lampiran "${file.name}". Bisa diunggah ulang lewat halaman Edit Faktur (faktur ini masih berstatus draft).`);
+        }
+      }
+
       router.push(`/dashboard/invoices/${invoice.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Gagal membuat faktur');
@@ -348,6 +369,12 @@ export default function NewInvoicePage() {
           )}
         </>
       )}
+
+      <InvoiceAttachmentsUploader
+        businessId={businessId}
+        stagedFiles={stagedAttachments}
+        onStagedFilesChange={setStagedAttachments}
+      />
 
       <Textarea
         label="Catatan (opsional)"
