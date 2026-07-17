@@ -7,7 +7,14 @@ import { Button, Select, SelectItem, Textarea } from '@heroui/react';
 import { AsyncSearchSelect, type PagedFetchResult } from '../../../components/async-search-select';
 import { CurrencyInput } from '../../../components/currency-input';
 import { LocationSelect } from '../../../components/location-select';
-import { EMPTY_ITEM_ROW, ItemRowsEditor, calcGrandTotal, formatCurrency, type ItemRow } from '../../../components/invoice-item-rows';
+import {
+  EMPTY_ITEM_ROW,
+  ItemRowsEditor,
+  calcEstimatedProfit,
+  calcGrandTotal,
+  formatCurrency,
+  type ItemRow,
+} from '../../../components/invoice-item-rows';
 import { ServiceRowsEditor, calcServiceTotal, type ServiceRow } from '../../../components/invoice-service-rows';
 import { LoadingSpinner } from '../../../components/loading-spinner';
 import { NoBusinessState } from '../../../components/no-business-state';
@@ -56,6 +63,7 @@ export default function NewInvoicePage() {
   const [items, setItems] = useState<ItemRow[]>([{ ...EMPTY_ITEM_ROW }]);
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [amount, setAmount] = useState('0');
+  const [discount, setDiscount] = useState('0');
   const [note, setNote] = useState('');
   const [staff, setStaff] = useState<PosStaff[]>([]);
 
@@ -153,9 +161,14 @@ export default function NewInvoicePage() {
     [businessId],
   );
 
+  const showDiscount = type === 'sale' || type === 'purchase';
+  const discountValue = showDiscount ? Number(discount) || 0 : 0;
+
   const grandTotal = isAmountBasedType(type)
     ? Number(amount) || 0
-    : calcGrandTotal(items) + (type !== 'transfer' ? calcServiceTotal(services) : 0);
+    : calcGrandTotal(items) + (type !== 'transfer' ? calcServiceTotal(services) : 0) - discountValue;
+
+  const estimatedProfit = type === 'sale' ? calcEstimatedProfit(items) - discountValue : null;
 
   async function handleSubmit() {
     if (!businessId || !locationId || !partyId) {
@@ -208,6 +221,7 @@ export default function NewInvoicePage() {
                 })),
               }
             : {}),
+          ...(showDiscount && discountValue > 0 ? { discount: discountValue } : {}),
           ...(note.trim() ? { note: note.trim() } : {}),
         }),
       });
@@ -226,9 +240,19 @@ export default function NewInvoicePage() {
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-foreground">Buat Faktur</h1>
-        <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-2.5 text-right">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Faktur</p>
-          <p className="text-lg font-bold text-foreground">{formatCurrency(grandTotal)}</p>
+        <div className="flex gap-3">
+          {estimatedProfit != null && (
+            <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-2.5 text-right">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Estimasi Untung</p>
+              <p className={`text-lg font-bold ${estimatedProfit < 0 ? 'text-danger' : 'text-success'}`}>
+                {formatCurrency(estimatedProfit)}
+              </p>
+            </div>
+          )}
+          <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-2.5 text-right">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Faktur</p>
+            <p className="text-lg font-bold text-foreground">{formatCurrency(grandTotal)}</p>
+          </div>
         </div>
       </div>
 
@@ -311,6 +335,15 @@ export default function NewInvoicePage() {
               mechanics={staff}
               fetchServiceOptions={fetchServiceOptions}
               businessId={businessId}
+            />
+          )}
+
+          {showDiscount && (
+            <CurrencyInput
+              label="Diskon (opsional)"
+              value={discount}
+              onValueChange={setDiscount}
+              className="max-w-xs"
             />
           )}
         </>

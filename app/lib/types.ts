@@ -259,6 +259,8 @@ export interface PosInvoice {
   subtotal: string;
   service_total: string;
   grand_total: string;
+  /** Potongan diskon global (nominal, bukan persen) — cuma relevan untuk type=sale/purchase. */
+  discount: string;
   /** Catatan tambahan bebas — opsional, tidak dipakai untuk logika apa pun. */
   note: string | null;
   /** Estimasi keuntungan kotor — cuma diisi untuk type='sale' yang sudah submitted/settled, NULL selainnya. */

@@ -436,6 +436,12 @@ export default function InvoiceDetailPage() {
               <span>{formatCurrency(invoice.service_total)}</span>
             </div>
           )}
+          {Number(invoice.discount) > 0 && (
+            <div className="flex justify-between">
+              <span className="text-default-500">Diskon</span>
+              <span className="text-danger">-{formatCurrency(invoice.discount)}</span>
+            </div>
+          )}
           <div className="flex justify-between font-semibold">
             <span>Grand Total</span>
             <span>{formatCurrency(invoice.grand_total)}</span>

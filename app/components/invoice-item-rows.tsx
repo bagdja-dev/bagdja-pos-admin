@@ -16,6 +16,8 @@ export interface ItemRow {
   adjusted_price: string;
   /** Harga master produk saat dipilih (sale_price/purchase_price sesuai tipe faktur) — dasar perbandingan naik/turun. */
   default_price: string;
+  /** Harga modal (purchase_price) produk saat dipilih — dasar estimasi keuntungan live di form (beda dari default_price, yang untuk faktur jual berisi sale_price bukan cost). */
+  cost_price: string;
 }
 
 export const EMPTY_ITEM_ROW: ItemRow = {
@@ -24,6 +26,7 @@ export const EMPTY_ITEM_ROW: ItemRow = {
   quantity: '1',
   adjusted_price: '',
   default_price: '',
+  cost_price: '',
 };
 
 export function calcGrandTotal(items: ItemRow[]): number {
@@ -31,6 +34,17 @@ export function calcGrandTotal(items: ItemRow[]): number {
     const price = Number(i.adjusted_price || i.default_price || 0);
     const qty = Number(i.quantity || 0);
     return sum + price * qty;
+  }, 0);
+}
+
+/** Estimasi keuntungan kotor live di form (belum dikurangi diskon) — cuma relevan untuk faktur jual. */
+export function calcEstimatedProfit(items: ItemRow[]): number {
+  return items.reduce((sum, i) => {
+    if (!i.product_id) return sum;
+    const price = Number(i.adjusted_price || i.default_price || 0);
+    const cost = Number(i.cost_price || 0);
+    const qty = Number(i.quantity || 0);
+    return sum + (price - cost) * qty;
   }, 0);
 }
 
@@ -61,6 +75,7 @@ export function ItemRowsEditor({ items, onChange, invoiceType, fetchProductOptio
       product_label: label,
       default_price: defaultPrice,
       adjusted_price: defaultPrice,
+      cost_price: product?.purchase_price ?? '',
     });
   }
 

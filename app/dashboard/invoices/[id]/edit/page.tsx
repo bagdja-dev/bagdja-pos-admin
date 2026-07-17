@@ -7,7 +7,14 @@ import { Button, Textarea } from '@heroui/react';
 import { AsyncSearchSelect, type PagedFetchResult } from '../../../../components/async-search-select';
 import { CurrencyInput } from '../../../../components/currency-input';
 import { LocationSelect } from '../../../../components/location-select';
-import { EMPTY_ITEM_ROW, ItemRowsEditor, calcGrandTotal, formatCurrency, type ItemRow } from '../../../../components/invoice-item-rows';
+import {
+  EMPTY_ITEM_ROW,
+  ItemRowsEditor,
+  calcEstimatedProfit,
+  calcGrandTotal,
+  formatCurrency,
+  type ItemRow,
+} from '../../../../components/invoice-item-rows';
 import { ServiceRowsEditor, calcServiceTotal, type ServiceRow } from '../../../../components/invoice-service-rows';
 import { LoadingSpinner } from '../../../../components/loading-spinner';
 import { NoBusinessState } from '../../../../components/no-business-state';
@@ -49,6 +56,7 @@ export default function EditInvoicePage() {
   const [items, setItems] = useState<ItemRow[]>([{ ...EMPTY_ITEM_ROW }]);
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [amount, setAmount] = useState('0');
+  const [discount, setDiscount] = useState('0');
   const [note, setNote] = useState('');
   const [staff, setStaff] = useState<PosStaff[]>([]);
 
@@ -69,6 +77,7 @@ export default function EditInvoicePage() {
         setLocationLabel(inv.location?.name ?? '');
         setPartyLabel(inv.party?.name ?? '');
         setAmount(inv.subtotal);
+        setDiscount(inv.discount ?? '0');
         setNote(inv.note ?? '');
         setItems(
           (inv.items ?? []).map((it) => ({
@@ -77,6 +86,7 @@ export default function EditInvoicePage() {
             quantity: String(it.quantity),
             adjusted_price: it.adjusted_price,
             default_price: it.product ? (inv.type === 'purchase' ? it.product.purchase_price : it.product.sale_price) : '',
+            cost_price: it.product?.purchase_price ?? '',
           })),
         );
         setServices(
@@ -149,10 +159,15 @@ export default function EditInvoicePage() {
     [businessId],
   );
 
+  const showDiscount = invoice?.type === 'sale' || invoice?.type === 'purchase';
+  const discountValue = showDiscount ? Number(discount) || 0 : 0;
+
   const grandTotal =
     invoice && isAmountBasedType(invoice.type)
       ? Number(amount) || 0
-      : calcGrandTotal(items) + (invoice?.type !== 'transfer' ? calcServiceTotal(services) : 0);
+      : calcGrandTotal(items) + (invoice?.type !== 'transfer' ? calcServiceTotal(services) : 0) - discountValue;
+
+  const estimatedProfit = invoice?.type === 'sale' ? calcEstimatedProfit(items) - discountValue : null;
 
   async function handleSubmit() {
     if (!businessId || !invoice || !partyId) return;
@@ -201,6 +216,7 @@ export default function EditInvoicePage() {
                   : {}),
               }),
           note: note.trim() || null,
+          ...(showDiscount ? { discount: discountValue } : {}),
         }),
       });
       router.push(`/dashboard/invoices/${invoice.id}`);
@@ -233,9 +249,19 @@ export default function EditInvoicePage() {
           <h1 className="text-2xl font-bold text-foreground">Edit Faktur Draft</h1>
           <p className="font-mono text-sm text-default-500">{invoice.invoice_number}</p>
         </div>
-        <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-2.5 text-right">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Faktur</p>
-          <p className="text-lg font-bold text-foreground">{formatCurrency(grandTotal)}</p>
+        <div className="flex gap-3">
+          {estimatedProfit != null && (
+            <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-2.5 text-right">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Estimasi Untung</p>
+              <p className={`text-lg font-bold ${estimatedProfit < 0 ? 'text-danger' : 'text-success'}`}>
+                {formatCurrency(estimatedProfit)}
+              </p>
+            </div>
+          )}
+          <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-2.5 text-right">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Faktur</p>
+            <p className="text-lg font-bold text-foreground">{formatCurrency(grandTotal)}</p>
+          </div>
         </div>
       </div>
 
@@ -300,6 +326,15 @@ export default function EditInvoicePage() {
               mechanics={staff}
               fetchServiceOptions={fetchServiceOptions}
               businessId={businessId}
+            />
+          )}
+
+          {showDiscount && (
+            <CurrencyInput
+              label="Diskon (opsional)"
+              value={discount}
+              onValueChange={setDiscount}
+              className="max-w-xs"
             />
           )}
         </>
