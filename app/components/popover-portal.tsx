@@ -3,6 +3,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 
+import { isAnyAppModalOpen } from './app-modal';
+
 interface PopoverPortalProps {
   anchorRef: RefObject<HTMLElement>;
   isOpen: boolean;
@@ -59,14 +61,22 @@ export function PopoverPortal({ anchorRef, isOpen, onClose, children, width = 40
     if (!isOpen) return;
 
     function handleOutside(e: MouseEvent) {
+      // Ada AppModal (mis. AsyncSearchSelect dipakai sebagai salah satu filter)
+      // terbuka di atas popover ini — modal itu di-portal ke root yang sama
+      // tapi jadi SIBLING popoverRef secara DOM (bukan descendant), jadi
+      // klik di dalamnya tetap bubble ke sini dan salah dianggap "di luar".
+      // Biarkan modal itu yang urus penutupan dirinya sendiri dulu.
+      if (isAnyAppModalOpen()) return;
       const target = e.target as Node;
       if (popoverRef.current?.contains(target) || anchorRef.current?.contains(target)) return;
       onClose();
     }
     function handleKey(e: KeyboardEvent) {
+      if (isAnyAppModalOpen()) return;
       if (e.key === 'Escape') onClose();
     }
     function handleReposition(e: Event) {
+      if (isAnyAppModalOpen()) return;
       // Kalau fokus sedang di dalam popover (mis. search box), resize/scroll yang
       // terjadi hampir pasti efek keyboard virtual mobile — baik keyboard-nya
       // muncul (resize di beberapa browser Android) maupun browser auto-scroll

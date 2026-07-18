@@ -21,12 +21,35 @@ const SIZE_CLASS: Record<AppModalSize, string> = {
   xl: 'max-w-2xl',
 };
 
+// Counter modul-level (bukan React state/context) — dipakai `PopoverPortal`
+// supaya listener outside-click/scroll-nya bisa tahu "ada AppModal lagi
+// terbuka di atasku" dan berhenti bereaksi selama itu. Perlu ini karena
+// AppModal di-portal ke `#modal-root` yang SAMA dengan PopoverPortal, jadi
+// meski secara React tree AppModal ada di dalam children popover, secara DOM
+// dia jadi SIBLING (bukan descendant) `popoverRef.current` — event
+// mousedown/scroll di dalam AppModal tetap bubble ke `document` tapi
+// `popoverRef.current.contains(target)` salah mengira itu "di luar" popover,
+// menutup popover-nya padahal user baru interaksi dengan modal bersarang
+// (mis. AsyncSearchSelect dipakai sebagai filter di dalam popover Filter DataGrid).
+let openAppModalCount = 0;
+export function isAnyAppModalOpen(): boolean {
+  return openAppModalCount > 0;
+}
+
 export function AppModal({ isOpen, onClose, title, children, footer, size = 'md' }: AppModalProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    openAppModalCount += 1;
+    return () => {
+      openAppModalCount -= 1;
+    };
+  }, [isOpen]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

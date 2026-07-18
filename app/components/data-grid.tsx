@@ -256,7 +256,7 @@ export function DataGrid<T = any>({
 
                   <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
                     {filterFields.map((field) => (
-                      <div key={field.key} className="space-y-2">
+                      <div key={field.key} className="min-w-0 space-y-2">
                         <label className="px-1 text-[10px] font-bold uppercase text-default-500">
                           {field.label}
                         </label>
@@ -269,9 +269,9 @@ export function DataGrid<T = any>({
                             className="w-full rounded-xl border border-default-200 bg-default-50 px-4 py-2 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                           />
                         ) : field.type === 'async-select' ? (
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex min-w-0 items-center gap-1.5">
                             <AsyncSearchSelect
-                              className="flex-1"
+                              className="min-w-0 flex-1"
                               placeholder={field.placeholder ?? `Cari ${field.label.toLowerCase()}...`}
                               selectedId={tempFilter[field.key] || ''}
                               selectedLabel={asyncLabels[field.key]}
