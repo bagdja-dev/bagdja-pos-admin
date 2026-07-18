@@ -11,7 +11,20 @@ import { LoadingSpinner } from '../../../components/loading-spinner';
 import { NoBusinessState } from '../../../components/no-business-state';
 import { apiClient, ApiError, buildGridQueryString } from '../../../lib/api-client';
 import { useBusinessContext } from '../../../context/business-context';
-import type { GridResult, PosContact, PosPaymentLedger } from '../../../lib/types';
+import {
+  PAYMENT_STATUS_LABELS,
+  type GridResult,
+  type PosContact,
+  type PosInvoicePaymentStatus,
+  type PosPaymentLedger,
+} from '../../../lib/types';
+
+const PAYMENT_STATUS_COLOR: Record<PosInvoicePaymentStatus, 'default' | 'warning' | 'success' | 'danger'> = {
+  not_applicable: 'default',
+  unpaid: 'danger',
+  partial: 'warning',
+  paid: 'success',
+};
 
 interface PartnerSummary {
   partner: PosContact;
@@ -74,6 +87,18 @@ export default function LedgerPartnerDetailPage() {
           {row.invoice?.invoice_number ?? 'Lihat'}
         </Button>
       ),
+    },
+    {
+      key: 'invoice_payment_status',
+      label: 'Status Bayar',
+      render: (_v, row) =>
+        row.invoice?.payment_status ? (
+          <Chip size="sm" color={PAYMENT_STATUS_COLOR[row.invoice.payment_status]} variant="flat">
+            {PAYMENT_STATUS_LABELS[row.invoice.payment_status]}
+          </Chip>
+        ) : (
+          '—'
+        ),
     },
     {
       key: 'entry_type',
