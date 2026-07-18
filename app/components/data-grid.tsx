@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 import { useDebouncedValue } from '../hooks/use-debounced-value';
+import { AsyncSearchSelect, type PagedFetchOptions } from './async-search-select';
 import { PopoverPortal } from './popover-portal';
 import type { GridResult } from '../lib/types';
 
@@ -44,9 +45,11 @@ export interface GridColumn<T = any> {
 export interface FilterField {
   key: string;
   label: string;
-  type: 'text' | 'select';
+  type: 'text' | 'select' | 'async-select';
   options?: { label: string; value: string }[];
   placeholder?: string;
+  /** Cuma dipakai untuk type='async-select' — cari server-side lewat modal (`AsyncSearchSelect`), dipakai kalau opsinya terlalu banyak/dinamis untuk `select` biasa (mis. pilih satu kontak/lokasi tertentu sebagai filter). */
+  fetchOptions?: PagedFetchOptions;
 }
 
 export interface FetchParams {
@@ -97,6 +100,11 @@ export function DataGrid<T = any>({
   const search = useDebouncedValue(searchInput, 350);
   const [filter, setFilter] = useState<Record<string, string>>({});
   const [tempFilter, setTempFilter] = useState<Record<string, string>>({});
+  // Label tampilan untuk filter `type='async-select'` — `filter`/`tempFilter`
+  // cuma menyimpan id (dikirim ke backend), jadi label-nya perlu disimpan
+  // terpisah supaya chip "Filter aktif" & tombol AsyncSearchSelect bisa
+  // menampilkan nama, bukan UUID mentah.
+  const [asyncLabels, setAsyncLabels] = useState<Record<string, string>>({});
   const [sort, setSort] = useState(defaultSort);
   const [viewMode, setViewMode] = useState<ViewMode>('auto');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -137,6 +145,7 @@ export function DataGrid<T = any>({
     setSearchInput('');
     setFilter({});
     setTempFilter({});
+    setAsyncLabels({});
     setPage(1);
   }
 
@@ -259,6 +268,34 @@ export function DataGrid<T = any>({
                             onChange={(e) => setTempFilter({ ...tempFilter, [field.key]: e.target.value })}
                             className="w-full rounded-xl border border-default-200 bg-default-50 px-4 py-2 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                           />
+                        ) : field.type === 'async-select' ? (
+                          <div className="flex items-center gap-1.5">
+                            <AsyncSearchSelect
+                              className="flex-1"
+                              placeholder={field.placeholder ?? `Cari ${field.label.toLowerCase()}...`}
+                              selectedId={tempFilter[field.key] || ''}
+                              selectedLabel={asyncLabels[field.key]}
+                              onSelect={(id, label) => {
+                                setTempFilter({ ...tempFilter, [field.key]: id });
+                                setAsyncLabels({ ...asyncLabels, [field.key]: label });
+                              }}
+                              fetchOptions={field.fetchOptions!}
+                            />
+                            {tempFilter[field.key] && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const next = { ...tempFilter };
+                                  delete next[field.key];
+                                  setTempFilter(next);
+                                }}
+                                className="rounded-lg p-2 text-default-400 hover:bg-default-200 hover:text-danger"
+                                aria-label={`Hapus filter ${field.label}`}
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
                         ) : (
                           <Select
                             aria-label={field.label}
@@ -467,7 +504,11 @@ export function DataGrid<T = any>({
               if (!value) return null;
               const field = filterFields.find((f) => f.key === key);
               const displayValue =
-                field?.type === 'select' ? field.options?.find((o) => o.value === value)?.label || value : value;
+                field?.type === 'select'
+                  ? field.options?.find((o) => o.value === value)?.label || value
+                  : field?.type === 'async-select'
+                    ? asyncLabels[key] || value
+                    : value;
 
               return (
                 <div
@@ -481,6 +522,11 @@ export function DataGrid<T = any>({
                       const next = { ...filter };
                       delete next[key];
                       setFilter(next);
+                      if (field?.type === 'async-select') {
+                        const nextLabels = { ...asyncLabels };
+                        delete nextLabels[key];
+                        setAsyncLabels(nextLabels);
+                      }
                     }}
                     className="rounded-full p-0.5 hover:bg-default-200"
                   >

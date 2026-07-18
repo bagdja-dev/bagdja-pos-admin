@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Chip } from '@heroui/react';
 import { Receipt } from 'lucide-react';
 
+import { type PagedFetchResult } from '../../components/async-search-select';
 import { DataGrid, type GridColumn } from '../../components/data-grid';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
@@ -18,8 +19,18 @@ import {
   INVOICE_TYPE_LABELS,
   PAYMENT_STATUS_LABELS,
   type GridResult,
+  type PosContact,
+  type PosContactType,
   type PosInvoice,
+  type PosLocation,
 } from '../../lib/types';
+
+const PARTY_FILTER_CONTACT_TYPE_LABELS: Record<PosContactType, string> = {
+  customer: 'Pelanggan',
+  supplier: 'Supplier',
+  lender: 'Pemberi Modal',
+  borrower: 'Peminjam (Kasbon)',
+};
 
 function formatCurrency(value: string | number) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
@@ -106,6 +117,46 @@ export default function InvoicesPage() {
     async (params: { page: number; size: number; search: string; filter: Record<string, string>; sort: string }) => {
       const qs = buildGridQueryString(params);
       return apiClient<GridResult<PosInvoice>>(`/api/businesses/${businessId}/invoices?${qs}`);
+    },
+    [businessId],
+  );
+
+  /**
+   * Pencarian gabungan kontak + lokasi buat filter "Pihak Terkait" — `party_id`
+   * di faktur polymorphic (kontak untuk sale/purchase/capital/withdrawal/
+   * kasbon, lokasi untuk transfer/outlet), jadi picker-nya perlu cari ke dua
+   * endpoint sekaligus. Lokasi cuma disertakan di halaman 1 (jumlahnya
+   * biasanya sedikit per bisnis, cukup 1x muat); halaman berikutnya cuma
+   * lanjut memuat kontak.
+   */
+  const fetchPartyFilterOptions = useCallback(
+    async (search: string, page: number): Promise<PagedFetchResult> => {
+      if (!businessId) return { items: [], hasMore: false };
+
+      const contactsRes = await apiClient<GridResult<PosContact>>(
+        `/api/businesses/${businessId}/contacts?search=${encodeURIComponent(search)}&size=10&page=${page}`,
+      );
+      const contactItems = contactsRes.data.map((c) => ({
+        id: c.id,
+        label: c.name,
+        description: PARTY_FILTER_CONTACT_TYPE_LABELS[c.type],
+      }));
+      const hasMoreContacts = contactsRes.meta.currentPage < contactsRes.meta.totalPages;
+
+      if (page > 1) {
+        return { items: contactItems, hasMore: hasMoreContacts };
+      }
+
+      const locationsRes = await apiClient<GridResult<PosLocation>>(
+        `/api/businesses/${businessId}/locations?search=${encodeURIComponent(search)}&size=10&page=1`,
+      );
+      const locationItems = locationsRes.data.map((l) => ({
+        id: l.id,
+        label: l.name,
+        description: 'Lokasi (Outlet Transfer)',
+      }));
+
+      return { items: [...contactItems, ...locationItems], hasMore: hasMoreContacts };
     },
     [businessId],
   );
@@ -245,10 +296,11 @@ export default function InvoicesPage() {
             ],
           },
           {
-            key: 'party',
+            key: 'partyId',
             label: 'Pihak Terkait',
-            type: 'text',
-            placeholder: 'Cari nama pelanggan/supplier/lokasi tujuan...',
+            type: 'async-select',
+            placeholder: 'Cari kontak atau lokasi...',
+            fetchOptions: fetchPartyFilterOptions,
           },
         ]}
         defaultSort="created_at:desc"
