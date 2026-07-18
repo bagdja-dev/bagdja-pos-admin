@@ -42,11 +42,12 @@ import {
 const AMOUNT_LABEL: Partial<Record<PosInvoiceType, string>> = {
   capital: 'Jumlah Modal',
   withdrawal: 'Jumlah Penarikan',
+  kasbon: 'Jumlah Kasbon',
 };
 
-/** Faktur `capital`/`withdrawal` sama-sama tanpa barang/jasa — nominalnya langsung dari `amount`. */
+/** Faktur `capital`/`withdrawal`/`kasbon` sama-sama tanpa barang/jasa — nominalnya langsung dari `amount`. */
 function isAmountBasedType(type: PosInvoiceType): boolean {
-  return type === 'capital' || type === 'withdrawal';
+  return type === 'capital' || type === 'withdrawal' || type === 'kasbon';
 }
 
 function formatCurrency(value: string) {
@@ -316,7 +317,9 @@ export default function InvoiceDetailPage() {
                   ? 'Pemberi Modal'
                   : invoice.type === 'withdrawal'
                     ? 'Diambil Oleh'
-                    : 'Lokasi Tujuan'
+                    : invoice.type === 'kasbon'
+                      ? 'Peminjam'
+                      : 'Lokasi Tujuan'
           }
           value={invoice.party?.name ?? ''}
         />

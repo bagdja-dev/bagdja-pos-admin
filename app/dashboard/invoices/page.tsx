@@ -220,6 +220,7 @@ export default function InvoicesPage() {
               { label: 'Mutasi', value: 'transfer' },
               { label: 'Modal', value: 'capital' },
               { label: 'Penarikan', value: 'withdrawal' },
+              { label: 'Kasbon', value: 'kasbon' },
             ],
           },
           {

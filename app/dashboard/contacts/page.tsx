@@ -25,6 +25,7 @@ const CONTACT_TYPE_LABELS: Record<PosContactType, string> = {
   customer: 'Pelanggan',
   supplier: 'Supplier',
   lender: 'Pemberi Modal',
+  borrower: 'Peminjam (Kasbon)',
 };
 
 export default function ContactsPage() {
@@ -184,6 +185,7 @@ export default function ContactsPage() {
               { label: 'Pelanggan', value: 'customer' },
               { label: 'Supplier', value: 'supplier' },
               { label: 'Pemberi Modal', value: 'lender' },
+              { label: 'Peminjam (Kasbon)', value: 'borrower' },
             ],
           },
         ]}
@@ -218,6 +220,7 @@ export default function ContactsPage() {
               <SelectItem key="customer">Pelanggan</SelectItem>
               <SelectItem key="supplier">Supplier</SelectItem>
               <SelectItem key="lender">Pemberi Modal</SelectItem>
+              <SelectItem key="borrower">Peminjam (Kasbon)</SelectItem>
             </Select>
           )}
           <Input

@@ -97,7 +97,7 @@ export interface PosStaffInvitation {
   emailSent?: boolean;
 }
 
-export type PosContactType = 'customer' | 'supplier' | 'lender';
+export type PosContactType = 'customer' | 'supplier' | 'lender' | 'borrower';
 
 export interface PosContactBankAccount {
   bank: string;
@@ -192,9 +192,9 @@ export interface RackForProduct {
   qty: number;
 }
 
-export type PosInvoiceType = 'sale' | 'purchase' | 'transfer' | 'capital' | 'withdrawal';
+export type PosInvoiceType = 'sale' | 'purchase' | 'transfer' | 'capital' | 'withdrawal' | 'kasbon';
 export type PosInvoiceFlow = 'in' | 'out';
-export type PosInvoicePartyType = 'customer' | 'supplier' | 'outlet' | 'lender';
+export type PosInvoicePartyType = 'customer' | 'supplier' | 'outlet' | 'lender' | 'borrower';
 export type PosInvoiceStatus = 'draft' | 'submitted' | 'settled' | 'void';
 export type PosInvoicePaymentStatus = 'not_applicable' | 'unpaid' | 'partial' | 'paid';
 
@@ -204,6 +204,7 @@ export const INVOICE_TYPE_LABELS: Record<PosInvoiceType, string> = {
   transfer: 'Mutasi',
   capital: 'Modal',
   withdrawal: 'Penarikan',
+  kasbon: 'Kasbon',
 };
 
 export const INVOICE_STATUS_LABELS: Record<PosInvoiceStatus, string> = {

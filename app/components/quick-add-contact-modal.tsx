@@ -11,6 +11,7 @@ const CONTACT_TYPE_LABELS: Record<PosContactType, string> = {
   customer: 'Pelanggan',
   supplier: 'Supplier',
   lender: 'Pemberi Modal',
+  borrower: 'Peminjam (Kasbon)',
 };
 
 interface QuickAddContactModalProps {

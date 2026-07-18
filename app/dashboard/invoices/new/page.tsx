@@ -40,16 +40,18 @@ const PARTY_FIELD: Record<PosInvoiceType, { label: string; placeholder: string; 
   transfer: { label: 'Lokasi Tujuan', placeholder: 'Cari lokasi tujuan...' },
   capital: { label: 'Pemberi Modal', placeholder: 'Cari pemberi modal...', contactType: 'lender' },
   withdrawal: { label: 'Diambil Oleh', placeholder: 'Cari pemilik/investor...', contactType: 'lender' },
+  kasbon: { label: 'Peminjam', placeholder: 'Cari peminjam...', contactType: 'borrower' },
 };
 
 const AMOUNT_LABEL: Partial<Record<PosInvoiceType, string>> = {
   capital: 'Jumlah Modal',
   withdrawal: 'Jumlah Penarikan',
+  kasbon: 'Jumlah Kasbon',
 };
 
-/** Faktur `capital`/`withdrawal` sama-sama tanpa barang/jasa — nominalnya langsung dari input `amount`. */
+/** Faktur `capital`/`withdrawal`/`kasbon` sama-sama tanpa barang/jasa — nominalnya langsung dari input `amount`. */
 function isAmountBasedType(type: PosInvoiceType): boolean {
-  return type === 'capital' || type === 'withdrawal';
+  return type === 'capital' || type === 'withdrawal' || type === 'kasbon';
 }
 
 export default function NewInvoicePage() {
@@ -83,7 +85,9 @@ export default function NewInvoicePage() {
         ? 'supplier'
         : type === 'capital' || type === 'withdrawal'
           ? 'lender'
-          : 'outlet';
+          : type === 'kasbon'
+            ? 'borrower'
+            : 'outlet';
 
   useEffect(() => {
     if (!businessId) return;
@@ -304,6 +308,7 @@ export default function NewInvoicePage() {
           <SelectItem key="transfer">Mutasi Antar Lokasi</SelectItem>
           <SelectItem key="capital">Modal</SelectItem>
           <SelectItem key="withdrawal">Penarikan</SelectItem>
+          <SelectItem key="kasbon">Kasbon</SelectItem>
         </Select>
 
         <LocationSelect

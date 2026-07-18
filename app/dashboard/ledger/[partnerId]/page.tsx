@@ -99,7 +99,13 @@ export default function LedgerPartnerDetailPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">{partner.name}</h1>
           <p className="text-sm text-default-500">
-            {partner.type === 'supplier' ? 'Supplier' : partner.type === 'lender' ? 'Pemberi Modal' : 'Pelanggan'}
+            {partner.type === 'supplier'
+              ? 'Supplier'
+              : partner.type === 'lender'
+                ? 'Pemberi Modal'
+                : partner.type === 'borrower'
+                  ? 'Peminjam (Kasbon)'
+                  : 'Pelanggan'}
             {partner.phone ? ` · ${partner.phone}` : ''}
             {partner.plate_number ? ` · ${partner.plate_number}` : ''}
           </p>

@@ -80,7 +80,13 @@ export default function LedgerLocationPage() {
       key: 'type',
       label: 'Tipe',
       render: (_v, row) =>
-        row.partner?.type === 'supplier' ? 'Supplier' : row.partner?.type === 'lender' ? 'Pemberi Modal' : 'Pelanggan',
+        row.partner?.type === 'supplier'
+          ? 'Supplier'
+          : row.partner?.type === 'lender'
+            ? 'Pemberi Modal'
+            : row.partner?.type === 'borrower'
+              ? 'Peminjam (Kasbon)'
+              : 'Pelanggan',
     },
     { key: 'totalDebit', label: 'Total Debit', sortable: true, render: (v) => formatCurrency(v) },
     { key: 'totalKredit', label: 'Total Kredit', sortable: true, render: (v) => formatCurrency(v) },
@@ -129,6 +135,7 @@ export default function LedgerLocationPage() {
               { label: 'Pelanggan', value: 'customer' },
               { label: 'Supplier', value: 'supplier' },
               { label: 'Pemberi Modal', value: 'lender' },
+              { label: 'Peminjam (Kasbon)', value: 'borrower' },
             ],
           },
         ]}

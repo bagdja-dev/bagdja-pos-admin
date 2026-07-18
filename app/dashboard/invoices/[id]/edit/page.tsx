@@ -38,11 +38,12 @@ import {
 const AMOUNT_LABEL: Partial<Record<PosInvoiceType, string>> = {
   capital: 'Jumlah Modal',
   withdrawal: 'Jumlah Penarikan',
+  kasbon: 'Jumlah Kasbon',
 };
 
-/** Faktur `capital`/`withdrawal` sama-sama tanpa barang/jasa — nominalnya langsung dari input `amount`. */
+/** Faktur `capital`/`withdrawal`/`kasbon` sama-sama tanpa barang/jasa — nominalnya langsung dari input `amount`. */
 function isAmountBasedType(type: PosInvoiceType): boolean {
-  return type === 'capital' || type === 'withdrawal';
+  return type === 'capital' || type === 'withdrawal' || type === 'kasbon';
 }
 
 export default function EditInvoicePage() {
@@ -115,7 +116,13 @@ export default function EditInvoicePage() {
     async (search: string, page: number): Promise<PagedFetchResult> => {
       if (!businessId || !invoice) return { items: [], hasMore: false };
       const partyType: PosContactType =
-        invoice.party_type === 'customer' ? 'customer' : invoice.party_type === 'lender' ? 'lender' : 'supplier';
+        invoice.party_type === 'customer'
+          ? 'customer'
+          : invoice.party_type === 'lender'
+            ? 'lender'
+            : invoice.party_type === 'borrower'
+              ? 'borrower'
+              : 'supplier';
       const res = await apiClient<GridResult<PosContact>>(
         `/api/businesses/${businessId}/contacts?search=${encodeURIComponent(search)}&filter[type]=${partyType}&size=10&page=${page}`,
       );
@@ -305,7 +312,9 @@ export default function EditInvoicePage() {
                   ? 'Supplier'
                   : invoice.type === 'capital'
                     ? 'Pemberi Modal'
-                    : 'Diambil Oleh'
+                    : invoice.type === 'kasbon'
+                      ? 'Peminjam'
+                      : 'Diambil Oleh'
             }
             placeholder="Cari..."
             selectedId={partyId}
@@ -320,7 +329,15 @@ export default function EditInvoicePage() {
               setContactModalOpen(true);
             }}
             createNewLabel={(q) =>
-              `Tambah "${q}" sebagai ${invoice.party_type === 'customer' ? 'pelanggan' : invoice.party_type === 'lender' ? 'pemberi modal' : 'supplier'} baru`
+              `Tambah "${q}" sebagai ${
+                invoice.party_type === 'customer'
+                  ? 'pelanggan'
+                  : invoice.party_type === 'lender'
+                    ? 'pemberi modal'
+                    : invoice.party_type === 'borrower'
+                      ? 'peminjam'
+                      : 'supplier'
+              } baru`
             }
             isRequired
           />
@@ -398,7 +415,15 @@ export default function EditInvoicePage() {
           isOpen={contactModalOpen}
           onClose={() => setContactModalOpen(false)}
           businessId={businessId}
-          type={invoice.party_type === 'customer' ? 'customer' : invoice.party_type === 'lender' ? 'lender' : 'supplier'}
+          type={
+            invoice.party_type === 'customer'
+              ? 'customer'
+              : invoice.party_type === 'lender'
+                ? 'lender'
+                : invoice.party_type === 'borrower'
+                  ? 'borrower'
+                  : 'supplier'
+          }
           initialName={contactModalQuery}
           onCreated={(contact) => {
             setPartyId(contact.id);
