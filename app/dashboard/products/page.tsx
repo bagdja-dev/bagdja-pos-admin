@@ -185,6 +185,7 @@ export default function ProductsPage() {
     {
       key: 'current_stock',
       label: 'Stok Saat Ini',
+      sortable: true,
       render: (_: unknown, row: PosProduct) => (
         <span className={row.current_stock <= row.min_stock ? 'font-medium text-danger' : ''}>
           {row.current_stock}
