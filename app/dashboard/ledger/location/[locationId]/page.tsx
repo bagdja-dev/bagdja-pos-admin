@@ -6,12 +6,20 @@ import Link from 'next/link';
 import { Button, Chip } from '@heroui/react';
 import { Scale } from 'lucide-react';
 
+import { type PagedFetchResult } from '../../../../components/async-search-select';
 import { DataGrid, type GridColumn } from '../../../../components/data-grid';
 import { LoadingSpinner } from '../../../../components/loading-spinner';
 import { NoBusinessState } from '../../../../components/no-business-state';
 import { apiClient, ApiError, buildGridQueryString } from '../../../../lib/api-client';
 import { useBusinessContext } from '../../../../context/business-context';
-import type { GridResult, PosContact } from '../../../../lib/types';
+import type { GridResult, PosContact, PosContactType } from '../../../../lib/types';
+
+const CONTACT_TYPE_LABELS: Record<PosContactType, string> = {
+  customer: 'Pelanggan',
+  supplier: 'Supplier',
+  lender: 'Pemberi Modal',
+  borrower: 'Peminjam (Kasbon)',
+};
 
 interface LedgerRow {
   partnerId: string;
@@ -58,6 +66,20 @@ export default function LedgerLocationPage() {
       return apiClient<GridResult<LedgerRow>>(`/api/businesses/${businessId}/ledger?${qs.toString()}`);
     },
     [businessId, params.locationId],
+  );
+
+  const fetchContactFilterOptions = useCallback(
+    async (search: string, page: number): Promise<PagedFetchResult> => {
+      if (!businessId) return { items: [], hasMore: false };
+      const res = await apiClient<GridResult<PosContact>>(
+        `/api/businesses/${businessId}/contacts?search=${encodeURIComponent(search)}&size=10&page=${page}`,
+      );
+      return {
+        items: res.data.map((c) => ({ id: c.id, label: c.name, description: CONTACT_TYPE_LABELS[c.type] })),
+        hasMore: res.meta.currentPage < res.meta.totalPages,
+      };
+    },
+    [businessId],
   );
 
   if (businessLoading || loadingSummary) return <LoadingSpinner />;
@@ -137,6 +159,13 @@ export default function LedgerLocationPage() {
               { label: 'Pemberi Modal', value: 'lender' },
               { label: 'Peminjam (Kasbon)', value: 'borrower' },
             ],
+          },
+          {
+            key: 'partnerId',
+            label: 'Kontak',
+            type: 'async-select',
+            placeholder: 'Cari kontak...',
+            fetchOptions: fetchContactFilterOptions,
           },
         ]}
         defaultSort="balance:desc"
