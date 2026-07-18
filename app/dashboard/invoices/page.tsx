@@ -115,48 +115,47 @@ export default function InvoicesPage() {
 
   const fetchData = useCallback(
     async (params: { page: number; size: number; search: string; filter: Record<string, string>; sort: string }) => {
-      const qs = buildGridQueryString(params);
+      // Filter "Pihak Terkait" dipecah jadi 2 picker terpisah di UI (Kontak
+      // vs Lokasi) supaya penggunanya jelas lagi cari yang mana — tapi
+      // keduanya sama-sama cuma jadi satu kondisi `party_id` di backend
+      // (`filter[partyId]`), jadi digabung di sini sebelum dikirim. Kalau
+      // dua-duanya kebetulan terisi, kontak menang (kasus langka, biasanya
+      // user cuma isi satu).
+      const { contactPartyId, locationPartyId, ...restFilter } = params.filter;
+      const partyId = contactPartyId || locationPartyId;
+      const qs = buildGridQueryString({
+        ...params,
+        filter: { ...restFilter, ...(partyId ? { partyId } : {}) },
+      });
       return apiClient<GridResult<PosInvoice>>(`/api/businesses/${businessId}/invoices?${qs}`);
     },
     [businessId],
   );
 
-  /**
-   * Pencarian gabungan kontak + lokasi buat filter "Pihak Terkait" — `party_id`
-   * di faktur polymorphic (kontak untuk sale/purchase/capital/withdrawal/
-   * kasbon, lokasi untuk transfer/outlet), jadi picker-nya perlu cari ke dua
-   * endpoint sekaligus. Lokasi cuma disertakan di halaman 1 (jumlahnya
-   * biasanya sedikit per bisnis, cukup 1x muat); halaman berikutnya cuma
-   * lanjut memuat kontak.
-   */
-  const fetchPartyFilterOptions = useCallback(
+  const fetchContactFilterOptions = useCallback(
     async (search: string, page: number): Promise<PagedFetchResult> => {
       if (!businessId) return { items: [], hasMore: false };
-
-      const contactsRes = await apiClient<GridResult<PosContact>>(
+      const res = await apiClient<GridResult<PosContact>>(
         `/api/businesses/${businessId}/contacts?search=${encodeURIComponent(search)}&size=10&page=${page}`,
       );
-      const contactItems = contactsRes.data.map((c) => ({
-        id: c.id,
-        label: c.name,
-        description: PARTY_FILTER_CONTACT_TYPE_LABELS[c.type],
-      }));
-      const hasMoreContacts = contactsRes.meta.currentPage < contactsRes.meta.totalPages;
+      return {
+        items: res.data.map((c) => ({ id: c.id, label: c.name, description: PARTY_FILTER_CONTACT_TYPE_LABELS[c.type] })),
+        hasMore: res.meta.currentPage < res.meta.totalPages,
+      };
+    },
+    [businessId],
+  );
 
-      if (page > 1) {
-        return { items: contactItems, hasMore: hasMoreContacts };
-      }
-
-      const locationsRes = await apiClient<GridResult<PosLocation>>(
-        `/api/businesses/${businessId}/locations?search=${encodeURIComponent(search)}&size=10&page=1`,
+  const fetchLocationFilterOptions = useCallback(
+    async (search: string, page: number): Promise<PagedFetchResult> => {
+      if (!businessId) return { items: [], hasMore: false };
+      const res = await apiClient<GridResult<PosLocation>>(
+        `/api/businesses/${businessId}/locations?search=${encodeURIComponent(search)}&size=10&page=${page}`,
       );
-      const locationItems = locationsRes.data.map((l) => ({
-        id: l.id,
-        label: l.name,
-        description: 'Lokasi (Outlet Transfer)',
-      }));
-
-      return { items: [...contactItems, ...locationItems], hasMore: hasMoreContacts };
+      return {
+        items: res.data.map((l) => ({ id: l.id, label: l.name })),
+        hasMore: res.meta.currentPage < res.meta.totalPages,
+      };
     },
     [businessId],
   );
@@ -296,11 +295,18 @@ export default function InvoicesPage() {
             ],
           },
           {
-            key: 'partyId',
-            label: 'Pihak Terkait',
+            key: 'contactPartyId',
+            label: 'Kontak',
             type: 'async-select',
-            placeholder: 'Cari kontak atau lokasi...',
-            fetchOptions: fetchPartyFilterOptions,
+            placeholder: 'Cari pelanggan/supplier/pemberi modal/peminjam...',
+            fetchOptions: fetchContactFilterOptions,
+          },
+          {
+            key: 'locationPartyId',
+            label: 'Lokasi',
+            type: 'async-select',
+            placeholder: 'Cari lokasi tujuan transfer...',
+            fetchOptions: fetchLocationFilterOptions,
           },
         ]}
         defaultSort="created_at:desc"

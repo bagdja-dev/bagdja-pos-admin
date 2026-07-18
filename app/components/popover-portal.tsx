@@ -23,7 +23,7 @@ interface PopoverPortalProps {
  */
 export function PopoverPortal({ anchorRef, isOpen, onClose, children, width = 400, matchAnchorWidth = false }: PopoverPortalProps) {
   const [mounted, setMounted] = useState(false);
-  const [style, setStyle] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [style, setStyle] = useState<{ top: number; left: number; width: number; maxHeight: number } | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
@@ -36,16 +36,23 @@ export function PopoverPortal({ anchorRef, isOpen, onClose, children, width = 40
 
     const rect = anchorRef.current.getBoundingClientRect();
     const margin = 8;
+    // Batasi tinggi ke sisa viewport di bawah anchor (dikurangi margin bawah)
+    // — sebelumnya popover tidak punya batas tinggi/overflow sama sekali,
+    // jadi kalau isinya (mis. banyak filter field) lebih tinggi dari sisa
+    // layar, bagian bawahnya (termasuk tombol Terapkan) kepotong di luar
+    // viewport dan TIDAK BISA discroll untuk dijangkau.
+    const bottomMargin = 16;
+    const maxHeight = Math.max(160, window.innerHeight - (rect.bottom + margin) - bottomMargin);
 
     if (matchAnchorWidth) {
-      setStyle({ top: rect.bottom + margin, left: rect.left, width: rect.width });
+      setStyle({ top: rect.bottom + margin, left: rect.left, width: rect.width, maxHeight });
       return;
     }
 
     let left = rect.right - width;
     left = Math.max(margin, Math.min(left, window.innerWidth - width - margin));
 
-    setStyle({ top: rect.bottom + margin, left, width });
+    setStyle({ top: rect.bottom + margin, left, width, maxHeight });
   }, [isOpen, anchorRef, width, matchAnchorWidth]);
 
   useEffect(() => {
@@ -94,7 +101,15 @@ export function PopoverPortal({ anchorRef, isOpen, onClose, children, width = 40
   return createPortal(
     <div
       ref={popoverRef}
-      style={{ position: 'fixed', top: style.top, left: style.left, width: style.width, zIndex: 100 }}
+      style={{
+        position: 'fixed',
+        top: style.top,
+        left: style.left,
+        width: style.width,
+        maxHeight: style.maxHeight,
+        overflowY: 'auto',
+        zIndex: 100,
+      }}
     >
       {children}
     </div>,
