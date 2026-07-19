@@ -385,9 +385,10 @@ export default function EditInvoicePage() {
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-3 md:flex-row">
         <Button
           variant="flat"
+          className="h-auto min-h-11 whitespace-normal py-2.5"
           isDisabled={savingAction !== null}
           onPress={() => router.push(`/dashboard/invoices/${invoice.id}`)}
         >
@@ -395,7 +396,7 @@ export default function EditInvoicePage() {
         </Button>
         <Button
           variant="flat"
-          className="flex-1"
+          className="h-auto min-h-11 flex-1 whitespace-normal py-2.5"
           isLoading={savingAction === 'draft'}
           isDisabled={savingAction !== null}
           onPress={() => handleSubmit(false)}
@@ -404,7 +405,7 @@ export default function EditInvoicePage() {
         </Button>
         <Button
           color="primary"
-          className="flex-1"
+          className="h-auto min-h-11 flex-1 whitespace-normal py-2.5"
           isLoading={savingAction === 'submit'}
           isDisabled={savingAction !== null}
           onPress={() => handleSubmit(true)}
