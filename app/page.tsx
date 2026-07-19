@@ -119,6 +119,17 @@ const features = [
     ),
   },
   {
+    title: 'Laporan Omzet per Lokasi',
+    desc: 'Omzet, estimasi untung, biaya jasa, dan belanja produk terhitung otomatis dari faktur jual/beli — total gabungan sekaligus rincian per cabang.',
+    gradient: 'from-indigo-500 to-blue-400',
+    bg: 'bg-indigo-50',
+    icon: (
+      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+      </svg>
+    ),
+  },
+  {
     title: 'Ekosistem Bagdja',
     desc: 'Login via SSO satu akun untuk semua layanan Bagdja — tidak perlu daftar/kelola password terpisah.',
     gradient: 'from-indigo-500 to-blue-400',
@@ -177,8 +188,8 @@ const pricingPlans = [
 const contacts = [
   {
     label: 'Telepon / WhatsApp',
-    value: '+62 854-8844-8686',
-    href: 'https://wa.me/6285488448686',
+    value: '+62 854-8844-8383',
+    href: 'https://wa.me/6285488448383',
     cta: 'Chat via WhatsApp',
     gradient: 'from-emerald-500 to-teal-400',
     bg: 'bg-emerald-50',
@@ -563,6 +574,131 @@ export default function LandingPage() {
               </ul>
             </div>
           </div>
+
+          {/* Piutang & Hutang */}
+          <div className="mt-24 grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+            <div>
+              <span className="mb-3 inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-700">
+                Piutang & Hutang
+              </span>
+              <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+                Tahu siapa yang belum bayar, tanpa buka buku catatan
+              </h3>
+              <p className="mt-4 text-base leading-relaxed text-gray-500">
+                Saldo piutang pelanggan dan hutang supplier terhitung otomatis dari histori faktur —
+                termasuk pembayaran sebagian/cicilan dengan bukti transfer terlampir. Tiap faktur di
+                kartu partner ditandai status bayarnya sendiri, jadi langsung kelihatan mana yang
+                masih menunggak.
+              </p>
+              <ul className="mt-6 space-y-3 text-sm text-gray-600">
+                {[
+                  'Saldo piutang/hutang per partner terhitung otomatis, tanpa rekap manual',
+                  'Dukung cicilan/pembayaran sebagian dengan bukti transfer terlampir',
+                  'Status bayar (lunas/sebagian/belum) ditandai per faktur di kartu partner',
+                ].map((point) => (
+                  <li key={point} className="flex items-start gap-2">
+                    <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
+                    </svg>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex justify-center">
+              <div className="w-full max-w-sm rounded-2xl border border-gray-100 bg-white p-5 shadow-xl">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Kartu Piutang & Hutang</p>
+                <div className="mt-3 space-y-2">
+                  {[
+                    { name: 'Bengkel Jaya Motor', type: 'Pelanggan', balance: '+Rp 1,25jt', color: 'text-emerald-600', status: 'Sebagian', statusColor: 'bg-amber-100 text-amber-700' },
+                    { name: 'CV Sumber Sparepart', type: 'Supplier', balance: '-Rp 830rb', color: 'text-rose-600', status: 'Belum Bayar', statusColor: 'bg-rose-100 text-rose-700' },
+                    { name: 'Toko Ali Motor', type: 'Pelanggan', balance: 'Lunas', color: 'text-gray-400', status: 'Lunas', statusColor: 'bg-emerald-100 text-emerald-700' },
+                  ].map((row) => (
+                    <div key={row.name} className="rounded-lg bg-gray-50 px-3 py-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-800">{row.name}</span>
+                        <span className={`text-xs font-bold ${row.color}`}>{row.balance}</span>
+                      </div>
+                      <div className="mt-1.5 flex items-center justify-between">
+                        <span className="text-[10px] text-gray-400">{row.type}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${row.statusColor}`}>
+                          {row.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Laporan Omzet */}
+          <div className="mt-24 grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+            <div className="flex justify-center lg:order-2">
+              <div className="w-full max-w-sm rounded-2xl border border-gray-100 bg-white p-5 shadow-xl">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Laporan Omzet — Bulan Ini</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div className="rounded-lg bg-emerald-50 p-2">
+                    <p className="text-[10px] font-medium text-emerald-700">Omzet</p>
+                    <p className="text-sm font-bold text-emerald-700">Rp 42jt</p>
+                  </div>
+                  <div className="rounded-lg bg-indigo-50 p-2">
+                    <p className="text-[10px] font-medium text-indigo-700">Est. Untung</p>
+                    <p className="text-sm font-bold text-indigo-700">Rp 9,4jt</p>
+                  </div>
+                  <div className="rounded-lg bg-rose-50 p-2">
+                    <p className="text-[10px] font-medium text-rose-700">Biaya Jasa</p>
+                    <p className="text-sm font-bold text-rose-700">Rp 3,1jt</p>
+                  </div>
+                  <div className="rounded-lg bg-amber-50 p-2">
+                    <p className="text-[10px] font-medium text-amber-700">Belanja Produk</p>
+                    <p className="text-sm font-bold text-amber-700">Rp 18jt</p>
+                  </div>
+                </div>
+                <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-gray-400">Per Lokasi</p>
+                <div className="space-y-2">
+                  {[
+                    { name: 'Toko Pusat', omzet: 'Rp 27jt' },
+                    { name: 'Cabang Selatan', omzet: 'Rp 15jt' },
+                  ].map((row) => (
+                    <div key={row.name} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs">
+                      <span className="font-medium text-gray-700">{row.name}</span>
+                      <span className="font-semibold text-emerald-600">{row.omzet}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:order-1">
+              <span className="mb-3 inline-block rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-700">
+                Laporan Omzet
+              </span>
+              <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+                Satu layar buat tahu untung-rugi seluruh toko
+              </h3>
+              <p className="mt-4 text-base leading-relaxed text-gray-500">
+                Omzet, estimasi untung, biaya jasa, dan belanja produk dihitung otomatis dari faktur
+                jual/beli yang sudah ada — tidak perlu rekap Excel terpisah. Lihat total gabungan
+                semua cabang, atau pecah per lokasi untuk bandingkan performa tiap toko.
+              </p>
+              <ul className="mt-6 space-y-3 text-sm text-gray-600">
+                {[
+                  'Filter rentang tanggal, dari harian sampai bulanan',
+                  'Estimasi untung dihitung otomatis dari margin produk yang terjual',
+                  'Biaya jasa dan belanja produk dipecah terpisah, bukan cuma total gabungan',
+                ].map((point) => (
+                  <li key={point} className="flex items-start gap-2">
+                    <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
+                    </svg>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -740,6 +876,89 @@ export default function LandingPage() {
             *Harga paket berbayar berlaku setelah masa beta berakhir dan payment gateway resmi aktif. Angka di
             atas adalah rencana harga dan dapat berubah sebelum diluncurkan.
           </p>
+        </div>
+      </section>
+
+      {/* ─── On-Premise / Self-Hosted ──────────────────── */}
+      <section className="px-4 py-4 sm:py-8">
+        <div className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-gray-900 px-6 py-14 sm:px-12 sm:py-16">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-cyan-400/10 blur-3xl" />
+            <div className="absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-emerald-400/10 blur-3xl" />
+          </div>
+
+          <div className="relative z-10 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div>
+              <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-cyan-300">
+                🔒 Opsi Baru — On-Premise
+              </span>
+              <h2 className="text-2xl font-extrabold leading-tight text-white sm:text-4xl">
+                Ingin Kecepatan &amp; Eksklusivitas
+                <br />
+                Kepemilikan Data?
+              </h2>
+              <p className="mt-4 max-w-xl text-base text-slate-300 sm:text-lg">
+                Install Bagdja POS langsung di server atau PC toko Anda sendiri. Data 100% di tangan
+                Anda, akses secepat jaringan lokal — tanpa nunggu koneksi internet untuk transaksi
+                sehari-hari.
+              </p>
+
+              <ul className="mt-6 space-y-3 text-sm text-slate-300 sm:text-base">
+                {[
+                  'Data tersimpan penuh di infrastruktur Anda sendiri, bukan di server cloud kami',
+                  'Akses secepat jaringan lokal (LAN) — kasir tetap jalan lancar walau internet lambat',
+                  'Instalasi mudah lewat Docker — tinggal jalankan satu perintah, tanpa setup ribet',
+                  'Diaktifkan dengan lisensi resmi dari Bagdja, mendukung update & dukungan teknis',
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-2.5">
+                    <svg
+                      className="mt-0.5 h-5 w-5 flex-shrink-0 text-cyan-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Button
+                  as={Link}
+                  href="#contact"
+                  size="lg"
+                  className="bg-gradient-to-r from-cyan-500 to-emerald-500 px-8 text-base font-bold text-white shadow-lg shadow-cyan-500/20"
+                >
+                  Tanya Opsi On-Premise
+                </Button>
+              </div>
+            </div>
+
+            <div className="relative hidden rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm lg:block">
+              <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+                <span className="h-3 w-3 rounded-full bg-red-400/70" />
+                <span className="h-3 w-3 rounded-full bg-amber-400/70" />
+                <span className="h-3 w-3 rounded-full bg-emerald-400/70" />
+                <span className="ml-2 font-mono text-xs text-slate-400">terminal</span>
+              </div>
+              <pre className="mt-4 overflow-x-auto font-mono text-xs leading-relaxed text-slate-300 sm:text-sm">
+                <code>
+                  <span className="text-slate-500"># Instalasi On-Premise Bagdja POS</span>
+                  {'\n'}
+                  <span className="text-cyan-400">$</span> docker compose up -d{'\n\n'}
+                  <span className="text-slate-500"># Masukkan lisensi Anda</span>
+                  {'\n'}
+                  <span className="text-cyan-400">$</span> Masukkan license key: ****-****{'\n\n'}
+                  <span className="text-emerald-400">✓</span> Bagdja POS siap dipakai — 100% lokal
+                </code>
+              </pre>
+            </div>
+          </div>
         </div>
       </section>
 
