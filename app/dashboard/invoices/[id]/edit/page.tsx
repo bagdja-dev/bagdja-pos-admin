@@ -8,6 +8,7 @@ import { AsyncSearchSelect, type PagedFetchResult } from '../../../../components
 import { CurrencyInput } from '../../../../components/currency-input';
 import { InvoiceAttachmentsUploader } from '../../../../components/invoice-attachments-uploader';
 import { LocationSelect } from '../../../../components/location-select';
+import { StickyHeader } from '../../../../components/sticky-header';
 import {
   EMPTY_ITEM_ROW,
   ItemRowsEditor,
@@ -265,26 +266,28 @@ export default function EditInvoicePage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Edit Faktur Draft</h1>
-          <p className="font-mono text-sm text-default-500">{invoice.invoice_number}</p>
-        </div>
-        <div className="flex gap-3">
-          {estimatedProfit != null && (
+      <StickyHeader>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Edit Faktur Draft</h1>
+            <p className="font-mono text-sm text-default-500">{invoice.invoice_number}</p>
+          </div>
+          <div className="flex gap-3">
+            {estimatedProfit != null && (
+              <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-2.5 text-right">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Estimasi Untung</p>
+                <p className={`text-lg font-bold ${estimatedProfit < 0 ? 'text-danger' : 'text-success'}`}>
+                  {formatCurrency(estimatedProfit)}
+                </p>
+              </div>
+            )}
             <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-2.5 text-right">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Estimasi Untung</p>
-              <p className={`text-lg font-bold ${estimatedProfit < 0 ? 'text-danger' : 'text-success'}`}>
-                {formatCurrency(estimatedProfit)}
-              </p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Faktur</p>
+              <p className="text-lg font-bold text-foreground">{formatCurrency(grandTotal)}</p>
             </div>
-          )}
-          <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-2.5 text-right">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Faktur</p>
-            <p className="text-lg font-bold text-foreground">{formatCurrency(grandTotal)}</p>
           </div>
         </div>
-      </div>
+      </StickyHeader>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <ReadOnlyField label="Tipe Faktur" value={INVOICE_TYPE_LABELS[invoice.type]} />

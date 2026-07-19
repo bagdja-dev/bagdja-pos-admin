@@ -12,6 +12,7 @@ import { LoadingSpinner } from '../../../../../components/loading-spinner';
 import { NoBusinessState } from '../../../../../components/no-business-state';
 import { NumberInput } from '../../../../../components/number-input';
 import { ProductSearchSelect } from '../../../../../components/product-search-select';
+import { StickyHeader } from '../../../../../components/sticky-header';
 import { type PagedFetchResult } from '../../../../../components/async-search-select';
 import { apiClient, ApiError, buildGridQueryString } from '../../../../../lib/api-client';
 import { useBusinessContext } from '../../../../../context/business-context';
@@ -164,20 +165,22 @@ export default function RackProductsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <Button as={Link} href={`/dashboard/locations/${params.locationId}/racks`} variant="light" size="sm" className="mb-2">
-            ← Kembali ke Rak
-          </Button>
-          <h1 className="text-2xl font-bold text-foreground">Rak {rack?.code ?? '...'}{rack?.name ? ` — ${rack.name}` : ''}</h1>
-          <p className="text-sm text-default-500">Produk yang dialokasikan ke rak ini.</p>
+      <StickyHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <Button as={Link} href={`/dashboard/locations/${params.locationId}/racks`} variant="light" size="sm" className="mb-2">
+              ← Kembali ke Rak
+            </Button>
+            <h1 className="text-2xl font-bold text-foreground">Rak {rack?.code ?? '...'}{rack?.name ? ` — ${rack.name}` : ''}</h1>
+            <p className="text-sm text-default-500">Produk yang dialokasikan ke rak ini.</p>
+          </div>
+          {canEdit && (
+            <Button color="primary" onPress={openAssign}>
+              + Assign Produk
+            </Button>
+          )}
         </div>
-        {canEdit && (
-          <Button color="primary" onPress={openAssign}>
-            + Assign Produk
-          </Button>
-        )}
-      </div>
+      </StickyHeader>
 
       <DataGrid<PosRackProduct>
         columns={columns}

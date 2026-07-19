@@ -12,6 +12,7 @@ import { NoBusinessState } from '../../components/no-business-state';
 import { NumberInput } from '../../components/number-input';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { PrintLabelButton } from '../../components/print-label-button';
+import { StickyHeader } from '../../components/sticky-header';
 import { TagInput } from '../../components/tag-input';
 import { useNewShortcut } from '../../hooks/use-new-shortcut';
 import { apiClient, ApiError, buildGridQueryString } from '../../lib/api-client';
@@ -224,17 +225,19 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Produk</h1>
-          <p className="text-sm text-default-500">Master katalog produk (harga beli/jual, stok minimum).</p>
+      <StickyHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Produk</h1>
+            <p className="text-sm text-default-500">Master katalog produk (harga beli/jual, stok minimum).</p>
+          </div>
+          {canEdit && (
+            <Button color="primary" onPress={openCreate}>
+              + Tambah Produk
+            </Button>
+          )}
         </div>
-        {canEdit && (
-          <Button color="primary" onPress={openCreate}>
-            + Tambah Produk
-          </Button>
-        )}
-      </div>
+      </StickyHeader>
 
       <DataGrid<PosProduct>
         columns={columns}

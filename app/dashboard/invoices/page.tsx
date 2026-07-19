@@ -10,6 +10,7 @@ import { type PagedFetchResult } from '../../components/async-search-select';
 import { DataGrid, type GridColumn } from '../../components/data-grid';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
+import { StickyHeader } from '../../components/sticky-header';
 import { useNewShortcut } from '../../hooks/use-new-shortcut';
 import { apiClient, buildGridQueryString } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
@@ -246,15 +247,17 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Faktur</h1>
-          <p className="text-sm text-default-500">Riwayat faktur jual, beli, dan transfer.</p>
+      <StickyHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Faktur</h1>
+            <p className="text-sm text-default-500">Riwayat faktur jual, beli, dan transfer.</p>
+          </div>
+          <Button as={Link} href="/dashboard/invoices/new" color="primary">
+            + Buat Faktur
+          </Button>
         </div>
-        <Button as={Link} href="/dashboard/invoices/new" color="primary">
-          + Buat Faktur
-        </Button>
-      </div>
+      </StickyHeader>
 
       <DataGrid<PosInvoice>
         columns={columns}

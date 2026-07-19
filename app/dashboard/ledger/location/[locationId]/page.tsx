@@ -10,6 +10,7 @@ import { type PagedFetchResult } from '../../../../components/async-search-selec
 import { DataGrid, type GridColumn } from '../../../../components/data-grid';
 import { LoadingSpinner } from '../../../../components/loading-spinner';
 import { NoBusinessState } from '../../../../components/no-business-state';
+import { StickyHeader } from '../../../../components/sticky-header';
 import { apiClient, ApiError, buildGridQueryString } from '../../../../lib/api-client';
 import { useBusinessContext } from '../../../../context/business-context';
 import type { GridResult, PosContact, PosContactType } from '../../../../lib/types';
@@ -126,24 +127,26 @@ export default function LedgerLocationPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <Button as={Link} href="/dashboard/ledger" variant="light" size="sm" className="mb-2">
-          ← Kembali ke Piutang/Hutang
-        </Button>
-        <h1 className="text-2xl font-bold text-foreground">{summary.locationName}</h1>
-        <p className="text-sm text-default-500">Kartu piutang/hutang partner khusus di toko ini.</p>
-      </div>
+      <StickyHeader>
+        <div>
+          <Button as={Link} href="/dashboard/ledger" variant="light" size="sm" className="mb-2">
+            ← Kembali ke Piutang/Hutang
+          </Button>
+          <h1 className="text-2xl font-bold text-foreground">{summary.locationName}</h1>
+          <p className="text-sm text-default-500">Kartu piutang/hutang partner khusus di toko ini.</p>
+        </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Piutang</p>
-          <p className="text-xl font-bold text-success">{formatCurrency(summary.totalPiutang)}</p>
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Piutang</p>
+            <p className="text-xl font-bold text-success">{formatCurrency(summary.totalPiutang)}</p>
+          </div>
+          <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Hutang</p>
+            <p className="text-xl font-bold text-danger">{formatCurrency(summary.totalHutang)}</p>
+          </div>
         </div>
-        <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Hutang</p>
-          <p className="text-xl font-bold text-danger">{formatCurrency(summary.totalHutang)}</p>
-        </div>
-      </div>
+      </StickyHeader>
 
       <DataGrid<LedgerRow>
         columns={columns}

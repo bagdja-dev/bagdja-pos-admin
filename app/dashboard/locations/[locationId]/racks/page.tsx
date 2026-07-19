@@ -11,6 +11,7 @@ import { DataGrid, type GridColumn } from '../../../../components/data-grid';
 import { LoadingSpinner } from '../../../../components/loading-spinner';
 import { NoBusinessState } from '../../../../components/no-business-state';
 import { NumberInput } from '../../../../components/number-input';
+import { StickyHeader } from '../../../../components/sticky-header';
 import { useNewShortcut } from '../../../../hooks/use-new-shortcut';
 import { apiClient, ApiError, buildGridQueryString } from '../../../../lib/api-client';
 import { useBusinessContext } from '../../../../context/business-context';
@@ -164,23 +165,25 @@ export default function LocationRacksPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <Button as={Link} href="/dashboard/locations" variant="light" size="sm" className="mb-2">
-            ← Kembali ke Lokasi
-          </Button>
-          <h1 className="text-2xl font-bold text-foreground">Rak — {location?.name ?? '...'}</h1>
-          <p className="text-sm text-default-500">
-            Antrian Ambil = urutan prioritas pengambilan otomatis saat barang keluar (jual/transfer). Penerima
-            Default = tujuan otomatis barang masuk (beli/transfer masuk).
-          </p>
+      <StickyHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <Button as={Link} href="/dashboard/locations" variant="light" size="sm" className="mb-2">
+              ← Kembali ke Lokasi
+            </Button>
+            <h1 className="text-2xl font-bold text-foreground">Rak — {location?.name ?? '...'}</h1>
+            <p className="text-sm text-default-500">
+              Antrian Ambil = urutan prioritas pengambilan otomatis saat barang keluar (jual/transfer). Penerima
+              Default = tujuan otomatis barang masuk (beli/transfer masuk).
+            </p>
+          </div>
+          {canEdit && (
+            <Button color="primary" onPress={openCreate}>
+              + Tambah Rak
+            </Button>
+          )}
         </div>
-        {canEdit && (
-          <Button color="primary" onPress={openCreate}>
-            + Tambah Rak
-          </Button>
-        )}
-      </div>
+      </StickyHeader>
 
       <DataGrid<PosRack>
         columns={columns}

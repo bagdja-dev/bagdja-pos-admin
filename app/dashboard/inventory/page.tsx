@@ -8,6 +8,7 @@ import { type PagedFetchResult } from '../../components/async-search-select';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { ProductSearchSelect } from '../../components/product-search-select';
 import { NoBusinessState } from '../../components/no-business-state';
+import { StickyHeader } from '../../components/sticky-header';
 import { apiClient, ApiError } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
 import {
@@ -74,10 +75,10 @@ export default function InventoryDashboardPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
+      <StickyHeader>
         <h1 className="text-2xl font-bold text-foreground">Dashboard Stok</h1>
         <p className="text-sm text-default-500">Cari satu produk untuk lihat sebaran stoknya di semua lokasi.</p>
-      </div>
+      </StickyHeader>
 
       <ProductSearchSelect
         label="Produk"

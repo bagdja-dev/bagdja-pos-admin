@@ -7,6 +7,7 @@ import { Scale } from 'lucide-react';
 
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
+import { StickyHeader } from '../../components/sticky-header';
 import { apiClient, ApiError } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
 
@@ -61,13 +62,13 @@ export default function LedgerPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
+      <StickyHeader>
         <h1 className="text-2xl font-bold text-foreground">Piutang / Hutang</h1>
         <p className="text-sm text-default-500">
           Piutang = pelanggan berhutang ke kita. Hutang = kita berhutang ke supplier. Dikelompokkan per toko —
           klik Detail untuk lihat kartu per partner di toko itu.
         </p>
-      </div>
+      </StickyHeader>
 
       {error && <p className="text-sm text-danger">{error}</p>}
 

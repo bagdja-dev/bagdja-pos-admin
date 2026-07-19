@@ -7,6 +7,7 @@ import { Wallet } from 'lucide-react';
 
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
+import { StickyHeader } from '../../components/sticky-header';
 import { apiClient, ApiError } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
 
@@ -67,32 +68,34 @@ export default function CashSummaryPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Kas</h1>
-        <p className="text-sm text-default-500">
-          Kas masuk/keluar riil dari faktur (bukan piutang/hutang) — dihitung dari pembayaran yang benar-benar
-          diterima/dikeluarkan, termasuk modal/pinjaman yang masuk saat submit.
-        </p>
-      </div>
+      <StickyHeader className="space-y-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Kas</h1>
+          <p className="text-sm text-default-500">
+            Kas masuk/keluar riil dari faktur (bukan piutang/hutang) — dihitung dari pembayaran yang benar-benar
+            diterima/dikeluarkan, termasuk modal/pinjaman yang masuk saat submit.
+          </p>
+        </div>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <Input type="date" label="Dari Tanggal" className="w-48" value={from} onValueChange={setFrom} />
-        <Input type="date" label="Sampai Tanggal" className="w-48" value={to} onValueChange={setTo} />
-        <Button variant="flat" onPress={load}>
-          Terapkan
-        </Button>
-        {(from || to) && (
-          <Button
-            variant="light"
-            onPress={() => {
-              setFrom('');
-              setTo('');
-            }}
-          >
-            Reset
+        <div className="flex flex-wrap items-end gap-3">
+          <Input type="date" label="Dari Tanggal" className="w-48" value={from} onValueChange={setFrom} />
+          <Input type="date" label="Sampai Tanggal" className="w-48" value={to} onValueChange={setTo} />
+          <Button variant="flat" onPress={load}>
+            Terapkan
           </Button>
-        )}
-      </div>
+          {(from || to) && (
+            <Button
+              variant="light"
+              onPress={() => {
+                setFrom('');
+                setTo('');
+              }}
+            >
+              Reset
+            </Button>
+          )}
+        </div>
+      </StickyHeader>
 
       {error && <p className="text-sm text-danger">{error}</p>}
 

@@ -9,6 +9,7 @@ import { AppModal } from '../../components/app-modal';
 import { DataGrid, type GridColumn } from '../../components/data-grid';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
+import { StickyHeader } from '../../components/sticky-header';
 import { useNewShortcut } from '../../hooks/use-new-shortcut';
 import { apiClient, ApiError, buildGridQueryString } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
@@ -138,17 +139,19 @@ export default function LocationsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Lokasi</h1>
-          <p className="text-sm text-default-500">Cabang toko & gudang milik bisnis ini.</p>
+      <StickyHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Lokasi</h1>
+            <p className="text-sm text-default-500">Cabang toko & gudang milik bisnis ini.</p>
+          </div>
+          {canEdit && (
+            <Button color="primary" onPress={openCreate}>
+              + Tambah Lokasi
+            </Button>
+          )}
         </div>
-        {canEdit && (
-          <Button color="primary" onPress={openCreate}>
-            + Tambah Lokasi
-          </Button>
-        )}
-      </div>
+      </StickyHeader>
 
       <DataGrid<PosLocation>
         columns={columns}

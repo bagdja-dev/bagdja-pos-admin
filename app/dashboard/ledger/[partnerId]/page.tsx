@@ -9,6 +9,7 @@ import { Scale } from 'lucide-react';
 import { DataGrid, type GridColumn } from '../../../components/data-grid';
 import { LoadingSpinner } from '../../../components/loading-spinner';
 import { NoBusinessState } from '../../../components/no-business-state';
+import { StickyHeader } from '../../../components/sticky-header';
 import { apiClient, ApiError, buildGridQueryString } from '../../../lib/api-client';
 import { useBusinessContext } from '../../../context/business-context';
 import {
@@ -120,25 +121,27 @@ export default function LedgerPartnerDetailPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{partner.name}</h1>
-          <p className="text-sm text-default-500">
-            {partner.type === 'supplier'
-              ? 'Supplier'
-              : partner.type === 'lender'
-                ? 'Pemberi Modal'
-                : partner.type === 'borrower'
-                  ? 'Peminjam (Kasbon)'
-                  : 'Pelanggan'}
-            {partner.phone ? ` · ${partner.phone}` : ''}
-            {partner.plate_number ? ` · ${partner.plate_number}` : ''}
-          </p>
+      <StickyHeader>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">{partner.name}</h1>
+            <p className="text-sm text-default-500">
+              {partner.type === 'supplier'
+                ? 'Supplier'
+                : partner.type === 'lender'
+                  ? 'Pemberi Modal'
+                  : partner.type === 'borrower'
+                    ? 'Peminjam (Kasbon)'
+                    : 'Pelanggan'}
+              {partner.phone ? ` · ${partner.phone}` : ''}
+              {partner.plate_number ? ` · ${partner.plate_number}` : ''}
+            </p>
+          </div>
+          <Chip size="lg" color={balance > 0 ? 'success' : balance < 0 ? 'danger' : 'default'} variant="flat">
+            {formatCurrency(Math.abs(balance))} {balance > 0 ? '(Piutang)' : balance < 0 ? '(Hutang)' : '(Lunas)'}
+          </Chip>
         </div>
-        <Chip size="lg" color={balance > 0 ? 'success' : balance < 0 ? 'danger' : 'default'} variant="flat">
-          {formatCurrency(Math.abs(balance))} {balance > 0 ? '(Piutang)' : balance < 0 ? '(Hutang)' : '(Lunas)'}
-        </Chip>
-      </div>
+      </StickyHeader>
 
       <DataGrid<PosPaymentLedger>
         columns={columns}

@@ -25,6 +25,7 @@ import { NumberInput } from '../../../components/number-input';
 import { NoBusinessState } from '../../../components/no-business-state';
 import { PaymentProofUploader } from '../../../components/payment-proof-uploader';
 import { PrintReceiptButton } from '../../../components/print-receipt-button';
+import { StickyHeader } from '../../../components/sticky-header';
 import { ReadOnlyField } from '../../../components/read-only-field';
 import { apiClient, ApiError } from '../../../lib/api-client';
 import { useBusinessContext } from '../../../context/business-context';
@@ -278,28 +279,30 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Faktur {INVOICE_TYPE_LABELS[invoice.type]}</h1>
-          <p className="font-mono text-sm text-default-500">{invoice.invoice_number}</p>
-          {invoice.refInvoice && (
-            <p className="mt-1 text-sm text-default-500">
-              Retur dari{' '}
-              <Link href={`/dashboard/invoices/${invoice.refInvoice.id}`} className="font-mono text-primary hover:underline">
-                {invoice.refInvoice.invoice_number}
-              </Link>
-            </p>
-          )}
+      <StickyHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Faktur {INVOICE_TYPE_LABELS[invoice.type]}</h1>
+            <p className="font-mono text-sm text-default-500">{invoice.invoice_number}</p>
+            {invoice.refInvoice && (
+              <p className="mt-1 text-sm text-default-500">
+                Retur dari{' '}
+                <Link href={`/dashboard/invoices/${invoice.refInvoice.id}`} className="font-mono text-primary hover:underline">
+                  {invoice.refInvoice.invoice_number}
+                </Link>
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Chip color={invoice.status === 'void' ? 'danger' : 'primary'} variant="flat">
+              {INVOICE_STATUS_LABELS[invoice.status]}
+            </Chip>
+            {invoice.type !== 'transfer' && (
+              <Chip variant="flat">{PAYMENT_STATUS_LABELS[invoice.payment_status]}</Chip>
+            )}
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Chip color={invoice.status === 'void' ? 'danger' : 'primary'} variant="flat">
-            {INVOICE_STATUS_LABELS[invoice.status]}
-          </Chip>
-          {invoice.type !== 'transfer' && (
-            <Chip variant="flat">{PAYMENT_STATUS_LABELS[invoice.payment_status]}</Chip>
-          )}
-        </div>
-      </div>
+      </StickyHeader>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <ReadOnlyField label="Tipe Faktur" value={INVOICE_TYPE_LABELS[invoice.type]} />

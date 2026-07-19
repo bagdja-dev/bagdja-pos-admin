@@ -18,6 +18,7 @@ import {
 import { AppModal } from '../../components/app-modal';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
+import { StickyHeader } from '../../components/sticky-header';
 import { useNewShortcut } from '../../hooks/use-new-shortcut';
 import { apiClient, ApiError } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
@@ -158,17 +159,19 @@ export default function StaffPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Tim</h1>
-          <p className="text-sm text-default-500">Staff aktif & undangan yang menunggu diterima.</p>
+      <StickyHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Tim</h1>
+            <p className="text-sm text-default-500">Staff aktif & undangan yang menunggu diterima.</p>
+          </div>
+          {canManage && (
+            <Button color="primary" onPress={openInvite}>
+              + Undang Staff
+            </Button>
+          )}
         </div>
-        {canManage && (
-          <Button color="primary" onPress={openInvite}>
-            + Undang Staff
-          </Button>
-        )}
-      </div>
+      </StickyHeader>
 
       {loading ? (
         <LoadingSpinner />
