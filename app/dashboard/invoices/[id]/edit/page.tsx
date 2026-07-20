@@ -28,7 +28,6 @@ import {
   INVOICE_TYPE_LABELS,
   type GridResult,
   type PosContact,
-  type PosContactType,
   type PosInvoice,
   type PosInvoiceType,
   type PosProduct,
@@ -113,26 +112,22 @@ export default function EditInvoicePage() {
       .catch(() => setStaff([]));
   }, [businessId]);
 
+  // Sengaja TIDAK filter berdasarkan `type` kontak — satu kontak (mis. sudah
+  // tercatat sebagai pelanggan) bisa saja juga berperan sebagai supplier/
+  // pemberi modal/peminjam di faktur lain, jadi semua kontak bisnis ini
+  // harus tetap muncul di pencarian pihak terkait apa pun tipe fakturnya.
   const fetchPartyOptions = useCallback(
     async (search: string, page: number): Promise<PagedFetchResult> => {
-      if (!businessId || !invoice) return { items: [], hasMore: false };
-      const partyType: PosContactType =
-        invoice.party_type === 'customer'
-          ? 'customer'
-          : invoice.party_type === 'lender'
-            ? 'lender'
-            : invoice.party_type === 'borrower'
-              ? 'borrower'
-              : 'supplier';
+      if (!businessId) return { items: [], hasMore: false };
       const res = await apiClient<GridResult<PosContact>>(
-        `/api/businesses/${businessId}/contacts?search=${encodeURIComponent(search)}&filter[type]=${partyType}&size=10&page=${page}`,
+        `/api/businesses/${businessId}/contacts?search=${encodeURIComponent(search)}&size=10&page=${page}`,
       );
       return {
         items: res.data.map((c) => ({ id: c.id, label: c.name, description: c.phone ?? c.plate_number ?? undefined })),
         hasMore: res.meta.currentPage < res.meta.totalPages,
       };
     },
-    [businessId, invoice],
+    [businessId],
   );
 
   const fetchProductOptions = useCallback(

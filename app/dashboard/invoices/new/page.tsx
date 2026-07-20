@@ -121,18 +121,22 @@ export default function NewInvoicePage() {
     };
   }, [businessId]);
 
+  // Sengaja TIDAK filter berdasarkan `type` kontak — satu kontak (mis. sudah
+  // tercatat sebagai pelanggan) bisa saja juga berperan sebagai supplier/
+  // pemberi modal/peminjam di faktur lain, jadi semua kontak bisnis ini
+  // harus tetap muncul di pencarian pihak terkait apa pun tipe fakturnya.
   const fetchPartyOptions = useCallback(
     async (search: string, page: number): Promise<PagedFetchResult> => {
       if (!businessId) return { items: [], hasMore: false };
       const res = await apiClient<GridResult<PosContact>>(
-        `/api/businesses/${businessId}/contacts?search=${encodeURIComponent(search)}&filter[type]=${partyType}&size=10&page=${page}`,
+        `/api/businesses/${businessId}/contacts?search=${encodeURIComponent(search)}&size=10&page=${page}`,
       );
       return {
         items: res.data.map((c) => ({ id: c.id, label: c.name, description: c.phone ?? c.plate_number ?? undefined })),
         hasMore: res.meta.currentPage < res.meta.totalPages,
       };
     },
-    [businessId, partyType],
+    [businessId],
   );
 
   const fetchProductOptions = useCallback(
