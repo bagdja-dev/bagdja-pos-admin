@@ -7,6 +7,13 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Bagdja POS Admin',
   description: 'Tenant back-office untuk mengelola bisnis POS di platform Bagdja.',
+  // iOS tidak baca `manifest.ts` sepenuhnya untuk "Add to Home Screen" —
+  // meta tag ini yang dipakai Safari untuk mode standalone/judul di layar.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'POS Dashboard',
+  },
 };
 
 // `maximumScale: 1` + `userScalable: false` mencegah browser mobile (terutama
@@ -18,6 +25,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: '#7c3aed',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
