@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.bagdja.pos.dashboard",
+        "sha256_cert_fingerprints": ["7E:2E:7D:BA:F0:50:1B:E6:2B:37:0B:7B:6E:D0:A2:74:D4:C2:10:05:34:A0:23:9B:B1:D1:02:01:F8:26:5B:9D"]
+      }
+    }]
