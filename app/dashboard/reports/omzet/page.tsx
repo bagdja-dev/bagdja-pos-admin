@@ -6,6 +6,7 @@ import { BarChart3 } from 'lucide-react';
 
 import { LoadingSpinner } from '../../../components/loading-spinner';
 import { NoBusinessState } from '../../../components/no-business-state';
+import { PageDescription } from '../../../components/page-description';
 import { StickyHeader } from '../../../components/sticky-header';
 import { ViewModeToggle } from '../../../components/view-mode-toggle';
 import { apiClient, ApiError } from '../../../lib/api-client';
@@ -76,10 +77,10 @@ export default function OmzetReportPage() {
       <StickyHeader className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Laporan Omzet</h1>
-          <p className="text-sm text-default-500">
+          <PageDescription>
             Omzet & estimasi untung dari faktur jual, biaya jasa & belanja produk dari faktur beli — dipecah per
             lokasi.
-          </p>
+          </PageDescription>
         </div>
 
         <div className="flex flex-wrap items-end gap-3">

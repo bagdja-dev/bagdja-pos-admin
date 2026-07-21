@@ -11,6 +11,7 @@ import { DataGrid, type GridColumn } from '../../../../components/data-grid';
 import { LoadingSpinner } from '../../../../components/loading-spinner';
 import { NoBusinessState } from '../../../../components/no-business-state';
 import { NumberInput } from '../../../../components/number-input';
+import { PageDescription } from '../../../../components/page-description';
 import { StickyHeader } from '../../../../components/sticky-header';
 import { useNewShortcut } from '../../../../hooks/use-new-shortcut';
 import { apiClient, ApiError, buildGridQueryString } from '../../../../lib/api-client';
@@ -172,10 +173,10 @@ export default function LocationRacksPage() {
               ← Kembali ke Lokasi
             </Button>
             <h1 className="text-2xl font-bold text-foreground">Rak — {location?.name ?? '...'}</h1>
-            <p className="text-sm text-default-500">
+            <PageDescription>
               Antrian Ambil = urutan prioritas pengambilan otomatis saat barang keluar (jual/transfer). Penerima
               Default = tujuan otomatis barang masuk (beli/transfer masuk).
-            </p>
+            </PageDescription>
           </div>
           {canEdit && (
             <Button color="primary" onPress={openCreate} className="w-full sm:w-auto">

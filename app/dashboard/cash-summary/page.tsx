@@ -7,6 +7,7 @@ import { Wallet } from 'lucide-react';
 
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
+import { PageDescription } from '../../components/page-description';
 import { StickyHeader } from '../../components/sticky-header';
 import { ViewModeToggle } from '../../components/view-mode-toggle';
 import { apiClient, ApiError } from '../../lib/api-client';
@@ -74,10 +75,10 @@ export default function CashSummaryPage() {
       <StickyHeader className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Kas</h1>
-          <p className="text-sm text-default-500">
+          <PageDescription>
             Kas masuk/keluar riil dari faktur (bukan piutang/hutang) — dihitung dari pembayaran yang benar-benar
             diterima/dikeluarkan, termasuk modal/pinjaman yang masuk saat submit.
-          </p>
+          </PageDescription>
         </div>
 
         <div className="flex flex-wrap items-end gap-3">
