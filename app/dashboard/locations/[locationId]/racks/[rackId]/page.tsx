@@ -166,7 +166,7 @@ export default function RackProductsPage() {
   return (
     <div className="space-y-4">
       <StickyHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Button as={Link} href={`/dashboard/locations/${params.locationId}/racks`} variant="light" size="sm" className="mb-2">
               ← Kembali ke Rak
@@ -175,7 +175,7 @@ export default function RackProductsPage() {
             <p className="text-sm text-default-500">Produk yang dialokasikan ke rak ini.</p>
           </div>
           {canEdit && (
-            <Button color="primary" onPress={openAssign}>
+            <Button color="primary" onPress={openAssign} className="w-full sm:w-auto">
               + Assign Produk
             </Button>
           )}
