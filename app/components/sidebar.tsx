@@ -158,8 +158,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         `}
       >
         <div className="flex h-16 items-center justify-between border-b border-default-200 px-4">
-          <Link href="/dashboard" className="text-lg font-bold tracking-tight">
-            <span className="text-primary">Bagdja</span> POS
+          <Link href="/dashboard" className="flex items-center">
+            <img src="/logo-full.png" alt="Bagdja POS" className="h-8 w-auto" />
           </Link>
           <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-default-100 lg:hidden">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

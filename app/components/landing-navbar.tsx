@@ -53,16 +53,8 @@ export function LandingNavbar() {
               )}
             </button>
 
-            <Link href="/" className="flex min-w-0 items-center gap-2" onClick={close}>
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-purple-500">
-                <span className="text-sm font-bold text-white">B</span>
-              </div>
-              <p className="truncate text-base font-bold tracking-tight sm:text-lg">
-                <span className="bg-gradient-to-r from-violet-600 to-purple-500 bg-clip-text text-transparent">
-                  Bagdja
-                </span>
-                <span className="text-gray-800"> POS</span>
-              </p>
+            <Link href="/" className="flex min-w-0 items-center" onClick={close}>
+              <img src="/logo-full.png" alt="Bagdja POS" className="h-8 w-auto shrink-0" />
             </Link>
           </div>
 
