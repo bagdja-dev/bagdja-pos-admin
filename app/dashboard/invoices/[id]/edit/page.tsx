@@ -262,23 +262,27 @@ export default function EditInvoicePage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <StickyHeader>
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Edit Faktur Draft</h1>
+            <h1 className="text-lg font-bold text-foreground sm:text-2xl">Edit Faktur Draft</h1>
             <p className="font-mono text-sm text-default-500">{invoice.invoice_number}</p>
           </div>
-          <div className="flex gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
             {estimatedProfit != null && (
-              <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-2.5 text-right">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Estimasi Untung</p>
-                <p className={`text-lg font-bold ${estimatedProfit < 0 ? 'text-danger' : 'text-success'}`}>
+              <div className="rounded-xl border border-default-200 bg-default-50 px-3 py-1.5 text-right sm:rounded-2xl sm:px-5 sm:py-2.5">
+                <p className="text-[9px] font-bold uppercase tracking-wide text-default-500 sm:text-[10px] sm:tracking-wider">
+                  Estimasi Untung
+                </p>
+                <p className={`text-sm font-bold sm:text-lg ${estimatedProfit < 0 ? 'text-danger' : 'text-success'}`}>
                   {formatCurrency(estimatedProfit)}
                 </p>
               </div>
             )}
-            <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-2.5 text-right">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Faktur</p>
-              <p className="text-lg font-bold text-foreground">{formatCurrency(grandTotal)}</p>
+            <div className="rounded-xl border border-default-200 bg-default-50 px-3 py-1.5 text-right sm:rounded-2xl sm:px-5 sm:py-2.5">
+              <p className="text-[9px] font-bold uppercase tracking-wide text-default-500 sm:text-[10px] sm:tracking-wider">
+                Total Faktur
+              </p>
+              <p className="text-sm font-bold text-foreground sm:text-lg">{formatCurrency(grandTotal)}</p>
             </div>
           </div>
         </div>
