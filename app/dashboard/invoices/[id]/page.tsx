@@ -27,8 +27,10 @@ import { PaymentProofUploader } from '../../../components/payment-proof-uploader
 import { PrintReceiptButton } from '../../../components/print-receipt-button';
 import { StickyHeader } from '../../../components/sticky-header';
 import { ReadOnlyField } from '../../../components/read-only-field';
+import { ViewModeToggle } from '../../../components/view-mode-toggle';
 import { apiClient, ApiError } from '../../../lib/api-client';
 import { useBusinessContext } from '../../../context/business-context';
+import { useViewMode } from '../../../hooks/use-view-mode';
 import {
   hasMinRole,
   INVOICE_STATUS_LABELS,
@@ -62,6 +64,9 @@ export default function InvoiceDetailPage() {
   const router = useRouter();
   const { businessId, activeMembership, role, loading: businessLoading } = useBusinessContext();
   const canSeeProfit = hasMinRole(role ?? '', 'manager');
+  const { mode: itemsViewMode, setMode: setItemsViewMode, showCards: showItemCards } = useViewMode(
+    'view-mode:invoice-items',
+  );
 
   const [invoice, setInvoice] = useState<PosInvoice | null>(null);
   const [ledger, setLedger] = useState<{ entries: PosPaymentLedger[]; outstanding: number } | null>(null);
@@ -387,49 +392,103 @@ export default function InvoiceDetailPage() {
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
+      {(!isAmountBasedType(invoice.type) || (invoice.type !== 'transfer' && (invoice.services?.length ?? 0) > 0)) && (
+        <div className="flex justify-end">
+          <ViewModeToggle mode={itemsViewMode} onChange={setItemsViewMode} />
+        </div>
+      )}
+
       {!isAmountBasedType(invoice.type) && (
         <div>
           <h2 className="mb-2 text-lg font-semibold text-foreground">Barang</h2>
-          <Table aria-label="Item faktur">
-            <TableHeader>
-              <TableColumn>PRODUK</TableColumn>
-              <TableColumn>QTY</TableColumn>
-              <TableColumn>DITERIMA</TableColumn>
-              <TableColumn>HARGA</TableColumn>
-              <TableColumn>SUBTOTAL</TableColumn>
-            </TableHeader>
-            <TableBody emptyContent="Tidak ada item">
-              {(invoice.items ?? []).map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.product?.name ?? item.product_id}</TableCell>
-                  <TableCell>{item.quantity}</TableCell>
-                  <TableCell>{item.quantity_received ?? '—'}</TableCell>
-                  <TableCell>{formatCurrency(item.adjusted_price)}</TableCell>
-                  <TableCell>{formatCurrency(item.subtotal)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {showItemCards ? (
+            <div className="space-y-2">
+              {(invoice.items ?? []).length === 0 ? (
+                <p className="rounded-xl border border-dashed border-default-200 bg-default-50 p-6 text-center text-sm text-default-500">
+                  Tidak ada item
+                </p>
+              ) : (
+                (invoice.items ?? []).map((item) => (
+                  <div key={item.id} className="rounded-2xl border border-default-200 bg-default-50 p-4">
+                    <p className="font-semibold text-foreground">{item.product?.name ?? item.product_id}</p>
+                    <div className="mt-2 space-y-1.5 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-default-500">Qty</span>
+                        <span>{item.quantity}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-default-500">Diterima</span>
+                        <span>{item.quantity_received ?? '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-default-500">Harga</span>
+                        <span>{formatCurrency(item.adjusted_price)}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-default-200 pt-1.5 font-semibold">
+                        <span className="text-default-500">Subtotal</span>
+                        <span>{formatCurrency(item.subtotal)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            <Table aria-label="Item faktur">
+              <TableHeader>
+                <TableColumn>PRODUK</TableColumn>
+                <TableColumn>QTY</TableColumn>
+                <TableColumn>DITERIMA</TableColumn>
+                <TableColumn>HARGA</TableColumn>
+                <TableColumn>SUBTOTAL</TableColumn>
+              </TableHeader>
+              <TableBody emptyContent="Tidak ada item">
+                {(invoice.items ?? []).map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{item.product?.name ?? item.product_id}</TableCell>
+                    <TableCell>{item.quantity}</TableCell>
+                    <TableCell>{item.quantity_received ?? '—'}</TableCell>
+                    <TableCell>{formatCurrency(item.adjusted_price)}</TableCell>
+                    <TableCell>{formatCurrency(item.subtotal)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       )}
 
       {invoice.type !== 'transfer' && (invoice.services?.length ?? 0) > 0 && (
         <div>
           <h2 className="mb-2 text-lg font-semibold text-foreground">Jasa</h2>
-          <Table aria-label="Jasa faktur">
-            <TableHeader>
-              <TableColumn>LABEL</TableColumn>
-              <TableColumn>BIAYA</TableColumn>
-            </TableHeader>
-            <TableBody>
+          {showItemCards ? (
+            <div className="space-y-2">
               {(invoice.services ?? []).map((s) => (
-                <TableRow key={s.id}>
-                  <TableCell>{s.label}</TableCell>
-                  <TableCell>{formatCurrency(s.amount)}</TableCell>
-                </TableRow>
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between rounded-2xl border border-default-200 bg-default-50 px-4 py-3"
+                >
+                  <span className="font-medium text-foreground">{s.label}</span>
+                  <span className="font-semibold">{formatCurrency(s.amount)}</span>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+          ) : (
+            <Table aria-label="Jasa faktur">
+              <TableHeader>
+                <TableColumn>LABEL</TableColumn>
+                <TableColumn>BIAYA</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {(invoice.services ?? []).map((s) => (
+                  <TableRow key={s.id}>
+                    <TableCell>{s.label}</TableCell>
+                    <TableCell>{formatCurrency(s.amount)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       )}
 
