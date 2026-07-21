@@ -1051,7 +1051,7 @@ export default function LandingPage() {
               <span className="text-lg font-bold text-gray-900">Bagdja POS</span>
             </div>
             <div className="flex gap-8 text-sm text-gray-500">
-              <Link href="#" className="transition-colors hover:text-gray-900">Kebijakan Privasi</Link>
+              <Link href="/privacy-policy" className="transition-colors hover:text-gray-900">Kebijakan Privasi</Link>
               <Link href="#" className="transition-colors hover:text-gray-900">Syarat & Ketentuan</Link>
               <Link href="#contact" className="transition-colors hover:text-gray-900">Kontak</Link>
             </div>
