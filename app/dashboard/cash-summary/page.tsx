@@ -8,8 +8,10 @@ import { Wallet } from 'lucide-react';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
 import { StickyHeader } from '../../components/sticky-header';
+import { ViewModeToggle } from '../../components/view-mode-toggle';
 import { apiClient, ApiError } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
+import { useViewMode } from '../../hooks/use-view-mode';
 
 interface CashTotals {
   cashIn: number;
@@ -35,6 +37,7 @@ function formatCurrency(value: number) {
 
 export default function CashSummaryPage() {
   const { businessId, loading: businessLoading } = useBusinessContext();
+  const { mode: viewMode, setMode: setViewMode, showCards } = useViewMode('view-mode:cash-summary');
 
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -126,43 +129,91 @@ export default function CashSummaryPage() {
           </div>
 
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-default-500">Per Lokasi</p>
-            <Table aria-label="Kas per lokasi">
-              <TableHeader>
-                <TableColumn>LOKASI</TableColumn>
-                <TableColumn>KAS MASUK</TableColumn>
-                <TableColumn>KAS KELUAR</TableColumn>
-                <TableColumn>SELISIH</TableColumn>
-                <TableColumn>AKSI</TableColumn>
-              </TableHeader>
-              <TableBody emptyContent="Belum ada pergerakan kas pada periode ini">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-default-500">Per Lokasi</p>
+              <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+            </div>
+
+            {summary.byLocation.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-default-200 bg-default-50 p-6 text-center text-sm text-default-500">
+                Belum ada pergerakan kas pada periode ini
+              </p>
+            ) : showCards ? (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {summary.byLocation.map((row) => {
                   const detailQs = new URLSearchParams();
                   if (from) detailQs.set('from', from);
                   if (to) detailQs.set('to', to);
                   return (
-                    <TableRow key={row.locationId}>
-                      <TableCell>{row.locationName}</TableCell>
-                      <TableCell className="text-success">{formatCurrency(row.cashIn)}</TableCell>
-                      <TableCell className="text-danger">{formatCurrency(row.cashOut)}</TableCell>
-                      <TableCell className={row.net >= 0 ? 'text-success' : 'text-danger'}>
-                        {formatCurrency(row.net)}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          as={Link}
-                          href={`/dashboard/cash-summary/${row.locationId}?${detailQs.toString()}`}
-                          size="sm"
-                          variant="flat"
-                        >
-                          Detail
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                    <div key={row.locationId} className="rounded-2xl border border-default-200 bg-default-50 p-4">
+                      <p className="font-semibold text-foreground">{row.locationName}</p>
+                      <div className="mt-3 space-y-1.5 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-default-500">Kas Masuk</span>
+                          <span className="font-semibold text-success">{formatCurrency(row.cashIn)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-default-500">Kas Keluar</span>
+                          <span className="font-semibold text-danger">{formatCurrency(row.cashOut)}</span>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-default-200 pt-1.5">
+                          <span className="text-default-500">Selisih</span>
+                          <span className={`font-semibold ${row.net >= 0 ? 'text-success' : 'text-danger'}`}>
+                            {formatCurrency(row.net)}
+                          </span>
+                        </div>
+                      </div>
+                      <Button
+                        as={Link}
+                        href={`/dashboard/cash-summary/${row.locationId}?${detailQs.toString()}`}
+                        size="sm"
+                        variant="flat"
+                        className="mt-3 w-full"
+                      >
+                        Detail
+                      </Button>
+                    </div>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </div>
+            ) : (
+              <Table aria-label="Kas per lokasi">
+                <TableHeader>
+                  <TableColumn>LOKASI</TableColumn>
+                  <TableColumn>KAS MASUK</TableColumn>
+                  <TableColumn>KAS KELUAR</TableColumn>
+                  <TableColumn>SELISIH</TableColumn>
+                  <TableColumn>AKSI</TableColumn>
+                </TableHeader>
+                <TableBody emptyContent="Belum ada pergerakan kas pada periode ini">
+                  {summary.byLocation.map((row) => {
+                    const detailQs = new URLSearchParams();
+                    if (from) detailQs.set('from', from);
+                    if (to) detailQs.set('to', to);
+                    return (
+                      <TableRow key={row.locationId}>
+                        <TableCell>{row.locationName}</TableCell>
+                        <TableCell className="text-success">{formatCurrency(row.cashIn)}</TableCell>
+                        <TableCell className="text-danger">{formatCurrency(row.cashOut)}</TableCell>
+                        <TableCell className={row.net >= 0 ? 'text-success' : 'text-danger'}>
+                          {formatCurrency(row.net)}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            as={Link}
+                            href={`/dashboard/cash-summary/${row.locationId}?${detailQs.toString()}`}
+                            size="sm"
+                            variant="flat"
+                          >
+                            Detail
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </div>
       ) : (

@@ -8,8 +8,10 @@ import { Scale } from 'lucide-react';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
 import { StickyHeader } from '../../components/sticky-header';
+import { ViewModeToggle } from '../../components/view-mode-toggle';
 import { apiClient, ApiError } from '../../lib/api-client';
 import { useBusinessContext } from '../../context/business-context';
+import { useViewMode } from '../../hooks/use-view-mode';
 
 interface LedgerTotals {
   totalPiutang: number;
@@ -34,6 +36,7 @@ function formatCurrency(value: number) {
 
 export default function LedgerPage() {
   const { businessId, loading: businessLoading } = useBusinessContext();
+  const { mode: viewMode, setMode: setViewMode, showCards } = useViewMode('view-mode:ledger');
 
   const [summary, setSummary] = useState<LedgerSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,29 +96,66 @@ export default function LedgerPage() {
           </div>
 
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-default-500">Per Toko</p>
-            <Table aria-label="Piutang/hutang per toko">
-              <TableHeader>
-                <TableColumn>TOKO</TableColumn>
-                <TableColumn>PIUTANG</TableColumn>
-                <TableColumn>HUTANG</TableColumn>
-                <TableColumn>AKSI</TableColumn>
-              </TableHeader>
-              <TableBody emptyContent="Belum ada aktivitas piutang/hutang pada toko manapun">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-default-500">Per Toko</p>
+              <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+            </div>
+
+            {summary.byLocation.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-default-200 bg-default-50 p-6 text-center text-sm text-default-500">
+                Belum ada aktivitas piutang/hutang pada toko manapun
+              </p>
+            ) : showCards ? (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {summary.byLocation.map((row) => (
-                  <TableRow key={row.locationId}>
-                    <TableCell>{row.locationName}</TableCell>
-                    <TableCell className="text-success">{formatCurrency(row.totalPiutang)}</TableCell>
-                    <TableCell className="text-danger">{formatCurrency(row.totalHutang)}</TableCell>
-                    <TableCell>
-                      <Button as={Link} href={`/dashboard/ledger/location/${row.locationId}`} size="sm" variant="flat">
-                        Detail
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                  <div key={row.locationId} className="rounded-2xl border border-default-200 bg-default-50 p-4">
+                    <p className="font-semibold text-foreground">{row.locationName}</p>
+                    <div className="mt-3 space-y-1.5 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-default-500">Piutang</span>
+                        <span className="font-semibold text-success">{formatCurrency(row.totalPiutang)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-default-500">Hutang</span>
+                        <span className="font-semibold text-danger">{formatCurrency(row.totalHutang)}</span>
+                      </div>
+                    </div>
+                    <Button
+                      as={Link}
+                      href={`/dashboard/ledger/location/${row.locationId}`}
+                      size="sm"
+                      variant="flat"
+                      className="mt-3 w-full"
+                    >
+                      Detail
+                    </Button>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            ) : (
+              <Table aria-label="Piutang/hutang per toko">
+                <TableHeader>
+                  <TableColumn>TOKO</TableColumn>
+                  <TableColumn>PIUTANG</TableColumn>
+                  <TableColumn>HUTANG</TableColumn>
+                  <TableColumn>AKSI</TableColumn>
+                </TableHeader>
+                <TableBody emptyContent="Belum ada aktivitas piutang/hutang pada toko manapun">
+                  {summary.byLocation.map((row) => (
+                    <TableRow key={row.locationId}>
+                      <TableCell>{row.locationName}</TableCell>
+                      <TableCell className="text-success">{formatCurrency(row.totalPiutang)}</TableCell>
+                      <TableCell className="text-danger">{formatCurrency(row.totalHutang)}</TableCell>
+                      <TableCell>
+                        <Button as={Link} href={`/dashboard/ledger/location/${row.locationId}`} size="sm" variant="flat">
+                          Detail
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </div>
       ) : (

@@ -7,8 +7,10 @@ import { BarChart3 } from 'lucide-react';
 import { LoadingSpinner } from '../../../components/loading-spinner';
 import { NoBusinessState } from '../../../components/no-business-state';
 import { StickyHeader } from '../../../components/sticky-header';
+import { ViewModeToggle } from '../../../components/view-mode-toggle';
 import { apiClient, ApiError } from '../../../lib/api-client';
 import { useBusinessContext } from '../../../context/business-context';
+import { useViewMode } from '../../../hooks/use-view-mode';
 
 interface OmzetTotals {
   omzet: number;
@@ -37,6 +39,7 @@ function formatCurrency(value: number) {
 
 export default function OmzetReportPage() {
   const { businessId, loading: businessLoading } = useBusinessContext();
+  const { mode: viewMode, setMode: setViewMode, showCards } = useViewMode('view-mode:omzet');
 
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -134,29 +137,65 @@ export default function OmzetReportPage() {
           </div>
 
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-default-500">Per Lokasi</p>
-            <div className="overflow-x-auto">
-              <Table aria-label="Omzet per lokasi">
-                <TableHeader>
-                  <TableColumn>LOKASI</TableColumn>
-                  <TableColumn>OMZET</TableColumn>
-                  <TableColumn>EST. PENDAPATAN</TableColumn>
-                  <TableColumn>BIAYA (JASA)</TableColumn>
-                  <TableColumn>BELANJA (PRODUK)</TableColumn>
-                </TableHeader>
-                <TableBody emptyContent="Belum ada data pada periode ini">
-                  {report.byLocation.map((row) => (
-                    <TableRow key={row.locationId}>
-                      <TableCell>{row.locationName}</TableCell>
-                      <TableCell className="text-success">{formatCurrency(row.omzet)}</TableCell>
-                      <TableCell className="text-primary">{formatCurrency(row.estimasiPendapatan)}</TableCell>
-                      <TableCell className="text-danger">{formatCurrency(row.biaya)}</TableCell>
-                      <TableCell className="text-danger">{formatCurrency(row.belanja)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-default-500">Per Lokasi</p>
+              <ViewModeToggle mode={viewMode} onChange={setViewMode} />
             </div>
+
+            {report.byLocation.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-default-200 bg-default-50 p-6 text-center text-sm text-default-500">
+                Belum ada data pada periode ini
+              </p>
+            ) : showCards ? (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {report.byLocation.map((row) => (
+                  <div key={row.locationId} className="rounded-2xl border border-default-200 bg-default-50 p-4">
+                    <p className="font-semibold text-foreground">{row.locationName}</p>
+                    <div className="mt-3 space-y-1.5 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-default-500">Omzet</span>
+                        <span className="font-semibold text-success">{formatCurrency(row.omzet)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-default-500">Est. Pendapatan</span>
+                        <span className="font-semibold text-primary">{formatCurrency(row.estimasiPendapatan)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-default-500">Biaya (Jasa)</span>
+                        <span className="font-semibold text-danger">{formatCurrency(row.biaya)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-default-500">Belanja (Produk)</span>
+                        <span className="font-semibold text-danger">{formatCurrency(row.belanja)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table aria-label="Omzet per lokasi">
+                  <TableHeader>
+                    <TableColumn>LOKASI</TableColumn>
+                    <TableColumn>OMZET</TableColumn>
+                    <TableColumn>EST. PENDAPATAN</TableColumn>
+                    <TableColumn>BIAYA (JASA)</TableColumn>
+                    <TableColumn>BELANJA (PRODUK)</TableColumn>
+                  </TableHeader>
+                  <TableBody emptyContent="Belum ada data pada periode ini">
+                    {report.byLocation.map((row) => (
+                      <TableRow key={row.locationId}>
+                        <TableCell>{row.locationName}</TableCell>
+                        <TableCell className="text-success">{formatCurrency(row.omzet)}</TableCell>
+                        <TableCell className="text-primary">{formatCurrency(row.estimasiPendapatan)}</TableCell>
+                        <TableCell className="text-danger">{formatCurrency(row.biaya)}</TableCell>
+                        <TableCell className="text-danger">{formatCurrency(row.belanja)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         </div>
       ) : (
