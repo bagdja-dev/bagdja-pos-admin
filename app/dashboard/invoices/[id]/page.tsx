@@ -309,7 +309,7 @@ export default function InvoiceDetailPage() {
         </div>
       </StickyHeader>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <ReadOnlyField label="Tipe Faktur" value={INVOICE_TYPE_LABELS[invoice.type]} />
         <ReadOnlyField
           label={invoice.type === 'transfer' ? 'Lokasi Asal' : 'Lokasi'}
@@ -342,7 +342,7 @@ export default function InvoiceDetailPage() {
 
       {businessId && <InvoiceAttachmentsUploader businessId={businessId} invoiceId={invoice.id} readOnly />}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1 [&>*]:shrink-0">
         {invoice.status === 'draft' && (
           <>
             <Button variant="flat" onPress={() => router.push(`/dashboard/invoices/${invoice.id}/edit`)}>
@@ -533,35 +533,75 @@ export default function InvoiceDetailPage() {
 
       {ledger && ledger.entries.length > 0 && (
         <div>
-          <h2 className="mb-2 text-lg font-semibold text-foreground">Kartu Ledger</h2>
-          <Table aria-label="Ledger faktur">
-            <TableHeader>
-              <TableColumn>TIPE</TableColumn>
-              <TableColumn>METODE</TableColumn>
-              <TableColumn>DEBIT</TableColumn>
-              <TableColumn>KREDIT</TableColumn>
-              <TableColumn>WAKTU</TableColumn>
-            </TableHeader>
-            <TableBody>
-              {ledger.entries.map((e) => (
-                <TableRow key={e.id}>
-                  <TableCell>
-                    {e.entry_type === 'invoice_issued'
-                      ? 'Tagihan'
-                      : e.entry_type === 'adjustment'
-                        ? 'Penyesuaian (Non-Tunai)'
-                        : e.entry_type === 'charge'
-                          ? 'Bunga'
-                          : 'Pembayaran'}
-                  </TableCell>
-                  <TableCell>{e.payment_method ?? '—'}</TableCell>
-                  <TableCell>{formatCurrency(e.debit)}</TableCell>
-                  <TableCell>{formatCurrency(e.kredit)}</TableCell>
-                  <TableCell>{new Date(e.created_at).toLocaleString('id-ID')}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-foreground">Kartu Ledger</h2>
+            <ViewModeToggle mode={itemsViewMode} onChange={setItemsViewMode} />
+          </div>
+          {showItemCards ? (
+            <div className="space-y-2">
+              {ledger.entries.map((e) => {
+                const entryLabel =
+                  e.entry_type === 'invoice_issued'
+                    ? 'Tagihan'
+                    : e.entry_type === 'adjustment'
+                      ? 'Penyesuaian (Non-Tunai)'
+                      : e.entry_type === 'charge'
+                        ? 'Bunga'
+                        : 'Pembayaran';
+                return (
+                  <div key={e.id} className="rounded-2xl border border-default-200 bg-default-50 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-foreground">{entryLabel}</p>
+                      <p className="text-xs text-default-500">{new Date(e.created_at).toLocaleString('id-ID')}</p>
+                    </div>
+                    <div className="mt-2 space-y-1.5 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-default-500">Metode</span>
+                        <span>{e.payment_method ?? '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-default-500">Debit</span>
+                        <span>{formatCurrency(e.debit)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-default-500">Kredit</span>
+                        <span>{formatCurrency(e.kredit)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <Table aria-label="Ledger faktur">
+              <TableHeader>
+                <TableColumn>TIPE</TableColumn>
+                <TableColumn>METODE</TableColumn>
+                <TableColumn>DEBIT</TableColumn>
+                <TableColumn>KREDIT</TableColumn>
+                <TableColumn>WAKTU</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {ledger.entries.map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell>
+                      {e.entry_type === 'invoice_issued'
+                        ? 'Tagihan'
+                        : e.entry_type === 'adjustment'
+                          ? 'Penyesuaian (Non-Tunai)'
+                          : e.entry_type === 'charge'
+                            ? 'Bunga'
+                            : 'Pembayaran'}
+                    </TableCell>
+                    <TableCell>{e.payment_method ?? '—'}</TableCell>
+                    <TableCell>{formatCurrency(e.debit)}</TableCell>
+                    <TableCell>{formatCurrency(e.kredit)}</TableCell>
+                    <TableCell>{new Date(e.created_at).toLocaleString('id-ID')}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       )}
 
