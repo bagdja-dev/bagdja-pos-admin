@@ -113,18 +113,18 @@ export default function CashSummaryPage() {
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-default-500">
               Total Semua Lokasi
             </p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Kas Masuk</p>
-                <p className="text-xl font-bold text-success">{formatCurrency(summary.total.cashIn)}</p>
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+              <div className="rounded-xl border border-default-200 bg-default-50 px-2 py-2 sm:rounded-2xl sm:px-5 sm:py-4">
+                <p className="text-[8px] font-bold uppercase tracking-wide text-default-500 sm:text-[10px] sm:tracking-wider">Kas Masuk</p>
+                <p className="text-xs font-bold text-success sm:text-xl">{formatCurrency(summary.total.cashIn)}</p>
               </div>
-              <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Kas Keluar</p>
-                <p className="text-xl font-bold text-danger">{formatCurrency(summary.total.cashOut)}</p>
+              <div className="rounded-xl border border-default-200 bg-default-50 px-2 py-2 sm:rounded-2xl sm:px-5 sm:py-4">
+                <p className="text-[8px] font-bold uppercase tracking-wide text-default-500 sm:text-[10px] sm:tracking-wider">Kas Keluar</p>
+                <p className="text-xs font-bold text-danger sm:text-xl">{formatCurrency(summary.total.cashOut)}</p>
               </div>
-              <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Selisih</p>
-                <p className={`text-xl font-bold ${summary.total.net >= 0 ? 'text-success' : 'text-danger'}`}>
+              <div className="rounded-xl border border-default-200 bg-default-50 px-2 py-2 sm:rounded-2xl sm:px-5 sm:py-4">
+                <p className="text-[8px] font-bold uppercase tracking-wide text-default-500 sm:text-[10px] sm:tracking-wider">Selisih</p>
+                <p className={`text-xs font-bold sm:text-xl ${summary.total.net >= 0 ? 'text-success' : 'text-danger'}`}>
                   {formatCurrency(summary.total.net)}
                 </p>
               </div>

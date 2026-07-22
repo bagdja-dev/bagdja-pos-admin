@@ -115,26 +115,32 @@ export default function OmzetReportPage() {
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-default-500">
               Total Semua Lokasi
             </p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Omzet</p>
-                <p className="text-xl font-bold text-success">{formatCurrency(report.total.omzet)}</p>
-              </div>
-              <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">
-                  Estimasi Pendapatan
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
+              <div className="rounded-xl border border-default-200 bg-default-50 px-1.5 py-2 sm:rounded-2xl sm:px-5 sm:py-4">
+                <p className="text-[7px] font-bold uppercase tracking-wide text-default-500 sm:text-[10px] sm:tracking-wider">
+                  Omzet
                 </p>
-                <p className="text-xl font-bold text-primary">{formatCurrency(report.total.estimasiPendapatan)}</p>
+                <p className="text-[10px] font-bold text-success sm:text-xl">{formatCurrency(report.total.omzet)}</p>
               </div>
-              <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Biaya (Jasa)</p>
-                <p className="text-xl font-bold text-danger">{formatCurrency(report.total.biaya)}</p>
-              </div>
-              <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">
-                  Total Belanja (Produk)
+              <div className="rounded-xl border border-default-200 bg-default-50 px-1.5 py-2 sm:rounded-2xl sm:px-5 sm:py-4">
+                <p className="text-[7px] font-bold uppercase tracking-wide text-default-500 sm:text-[10px] sm:tracking-wider">
+                  Est. Pendapatan
                 </p>
-                <p className="text-xl font-bold text-danger">{formatCurrency(report.total.belanja)}</p>
+                <p className="text-[10px] font-bold text-primary sm:text-xl">
+                  {formatCurrency(report.total.estimasiPendapatan)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-default-200 bg-default-50 px-1.5 py-2 sm:rounded-2xl sm:px-5 sm:py-4">
+                <p className="text-[7px] font-bold uppercase tracking-wide text-default-500 sm:text-[10px] sm:tracking-wider">
+                  Biaya (Jasa)
+                </p>
+                <p className="text-[10px] font-bold text-danger sm:text-xl">{formatCurrency(report.total.biaya)}</p>
+              </div>
+              <div className="rounded-xl border border-default-200 bg-default-50 px-1.5 py-2 sm:rounded-2xl sm:px-5 sm:py-4">
+                <p className="text-[7px] font-bold uppercase tracking-wide text-default-500 sm:text-[10px] sm:tracking-wider">
+                  Belanja (Produk)
+                </p>
+                <p className="text-[10px] font-bold text-danger sm:text-xl">{formatCurrency(report.total.belanja)}</p>
               </div>
             </div>
           </div>

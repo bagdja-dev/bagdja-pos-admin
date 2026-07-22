@@ -136,14 +136,14 @@ export default function LedgerLocationPage() {
           <p className="text-sm text-default-500">Kartu piutang/hutang partner khusus di toko ini.</p>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-4">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Piutang</p>
-            <p className="text-xl font-bold text-success">{formatCurrency(summary.totalPiutang)}</p>
+        <div className="mt-4 grid grid-cols-2 gap-1.5 sm:gap-3">
+          <div className="rounded-xl border border-default-200 bg-default-50 px-2 py-2 sm:rounded-2xl sm:px-5 sm:py-4">
+            <p className="text-[8px] font-bold uppercase tracking-wide text-default-500 sm:text-[10px] sm:tracking-wider">Total Piutang</p>
+            <p className="text-xs font-bold text-success sm:text-xl">{formatCurrency(summary.totalPiutang)}</p>
           </div>
-          <div className="rounded-2xl border border-default-200 bg-default-50 px-5 py-4">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Hutang</p>
-            <p className="text-xl font-bold text-danger">{formatCurrency(summary.totalHutang)}</p>
+          <div className="rounded-xl border border-default-200 bg-default-50 px-2 py-2 sm:rounded-2xl sm:px-5 sm:py-4">
+            <p className="text-[8px] font-bold uppercase tracking-wide text-default-500 sm:text-[10px] sm:tracking-wider">Total Hutang</p>
+            <p className="text-xs font-bold text-danger sm:text-xl">{formatCurrency(summary.totalHutang)}</p>
           </div>
         </div>
       </StickyHeader>
