@@ -285,7 +285,7 @@ export default function InvoiceDetailPage() {
   return (
     <div className="space-y-6">
       <StickyHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Faktur {INVOICE_TYPE_LABELS[invoice.type]}</h1>
             <p className="font-mono text-sm text-default-500">{invoice.invoice_number}</p>

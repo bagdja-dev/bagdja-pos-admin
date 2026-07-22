@@ -160,13 +160,13 @@ export default function StaffPage() {
   return (
     <div className="space-y-8">
       <StickyHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Tim</h1>
             <p className="text-sm text-default-500">Staff aktif & undangan yang menunggu diterima.</p>
           </div>
           {canManage && (
-            <Button color="primary" onPress={openInvite}>
+            <Button color="primary" onPress={openInvite} className="w-full sm:w-auto">
               + Undang Staff
             </Button>
           )}

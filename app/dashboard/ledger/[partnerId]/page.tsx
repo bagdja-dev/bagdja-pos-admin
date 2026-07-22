@@ -122,7 +122,7 @@ export default function LedgerPartnerDetailPage() {
   return (
     <div className="space-y-4">
       <StickyHeader>
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">{partner.name}</h1>
             <p className="text-sm text-default-500">

@@ -226,13 +226,13 @@ export default function ProductsPage() {
   return (
     <div className="space-y-4">
       <StickyHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Produk</h1>
             <p className="text-sm text-default-500">Master katalog produk (harga beli/jual, stok minimum).</p>
           </div>
           {canEdit && (
-            <Button color="primary" onPress={openCreate}>
+            <Button color="primary" onPress={openCreate} className="w-full sm:w-auto">
               + Tambah Produk
             </Button>
           )}

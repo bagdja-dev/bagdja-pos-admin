@@ -248,12 +248,12 @@ export default function InvoicesPage() {
   return (
     <div className="space-y-4">
       <StickyHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Faktur</h1>
             <p className="text-sm text-default-500">Riwayat faktur jual, beli, dan transfer.</p>
           </div>
-          <Button as={Link} href="/dashboard/invoices/new" color="primary">
+          <Button as={Link} href="/dashboard/invoices/new" color="primary" className="w-full sm:w-auto">
             + Buat Faktur
           </Button>
         </div>
