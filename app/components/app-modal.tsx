@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 type AppModalSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -21,39 +21,25 @@ const SIZE_CLASS: Record<AppModalSize, string> = {
   xl: 'max-w-2xl',
 };
 
-// Counter modul-level (bukan React state/context) — dipakai `PopoverPortal`
-// supaya listener outside-click/scroll-nya bisa tahu "ada AppModal lagi
-// terbuka di atasku" dan berhenti bereaksi selama itu. Perlu ini karena
-// AppModal di-portal ke `#modal-root` yang SAMA dengan PopoverPortal, jadi
-// meski secara React tree AppModal ada di dalam children popover, secara DOM
-// dia jadi SIBLING (bukan descendant) `popoverRef.current` — event
-// mousedown/scroll di dalam AppModal tetap bubble ke `document` tapi
-// `popoverRef.current.contains(target)` salah mengira itu "di luar" popover,
-// menutup popover-nya padahal user baru interaksi dengan modal bersarang
-// (mis. AsyncSearchSelect dipakai sebagai filter di dalam popover Filter DataGrid).
-let openAppModalCount = 0;
-export function isAnyAppModalOpen(): boolean {
-  return openAppModalCount > 0;
-}
+// Stack modul-level dari modal yang sedang terbuka — AppModal bisa bersarang
+// (mis. AsyncSearchSelect dipakai sebagai salah satu filter di dalam AppModal
+// Filter DataGrid, dan keduanya sama-sama AppModal). Listener `keydown` tiap
+// instance dipasang langsung ke `document`, jadi satu tombol Escape akan kena
+// SEMUA listener yang aktif tanpa stack ini — bukan cuma modal paling atas.
+// Stack ini memastikan Escape cuma menutup modal ter-atas/paling baru dibuka.
+const openModalStack: symbol[] = [];
 
 export function AppModal({ isOpen, onClose, title, children, footer, size = 'md' }: AppModalProps) {
   const [mounted, setMounted] = useState(false);
+  const idRef = useRef(Symbol('app-modal'));
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    openAppModalCount += 1;
-    return () => {
-      openAppModalCount -= 1;
-    };
-  }, [isOpen]);
-
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && openModalStack[openModalStack.length - 1] === idRef.current) onClose();
     },
     [onClose],
   );
@@ -61,11 +47,14 @@ export function AppModal({ isOpen, onClose, title, children, footer, size = 'md'
   useEffect(() => {
     if (!isOpen) return;
 
+    const id = idRef.current;
+    openModalStack.push(id);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
+      openModalStack.splice(openModalStack.indexOf(id), 1);
       document.body.style.overflow = prev;
       document.removeEventListener('keydown', handleKeyDown);
     };

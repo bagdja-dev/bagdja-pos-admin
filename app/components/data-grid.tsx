@@ -1,11 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Select, SelectItem } from '@heroui/react';
 import {
   Search,
   SlidersHorizontal,
-  Filter,
   X,
   ChevronUp,
   ChevronDown,
@@ -18,8 +17,8 @@ import {
 } from 'lucide-react';
 
 import { useDebouncedValue } from '../hooks/use-debounced-value';
+import { AppModal } from './app-modal';
 import { AsyncSearchSelect, type PagedFetchOptions } from './async-search-select';
-import { PopoverPortal } from './popover-portal';
 import type { GridResult } from '../lib/types';
 
 /**
@@ -109,8 +108,6 @@ export function DataGrid<T = any>({
   const [viewMode, setViewMode] = useState<ViewMode>('auto');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const filterButtonRef = useRef<HTMLButtonElement>(null);
-  const settingsButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setPage(1);
@@ -221,7 +218,6 @@ export function DataGrid<T = any>({
                 />
                 {filterFields.length > 0 && (
                   <button
-                    ref={filterButtonRef}
                     onClick={() => {
                       setTempFilter(filter);
                       setIsFilterOpen((v) => !v);
@@ -237,118 +233,105 @@ export function DataGrid<T = any>({
                 )}
               </div>
 
-              <PopoverPortal
-                anchorRef={filterButtonRef}
+              <AppModal
                 isOpen={isFilterOpen}
                 onClose={() => setIsFilterOpen(false)}
-                width={420}
-              >
-                <div className="rounded-2xl border border-default-200 bg-white p-6 shadow-2xl">
-                  <div className="mb-6 flex items-center justify-between">
-                    <h4 className="flex items-center gap-2 text-sm font-bold text-foreground">
-                      <Filter className="h-4 w-4 text-primary" />
-                      Filter
-                    </h4>
-                    <button onClick={() => setIsFilterOpen(false)} className="text-default-400 hover:text-foreground">
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-
-                  <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {filterFields.map((field) => (
-                      <div key={field.key} className="min-w-0 space-y-2">
-                        <label className="px-1 text-[10px] font-bold uppercase text-default-500">
-                          {field.label}
-                        </label>
-                        {field.type === 'text' ? (
-                          <input
-                            type="text"
-                            placeholder={field.placeholder}
-                            value={tempFilter[field.key] || ''}
-                            onChange={(e) => setTempFilter({ ...tempFilter, [field.key]: e.target.value })}
-                            className="w-full rounded-xl border border-default-200 bg-default-50 px-4 py-2 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                          />
-                        ) : field.type === 'async-select' ? (
-                          <div className="flex min-w-0 items-center gap-1.5">
-                            <AsyncSearchSelect
-                              className="min-w-0 flex-1"
-                              placeholder={field.placeholder ?? `Cari ${field.label.toLowerCase()}...`}
-                              selectedId={tempFilter[field.key] || ''}
-                              selectedLabel={asyncLabels[field.key]}
-                              onSelect={(id, label) => {
-                                setTempFilter({ ...tempFilter, [field.key]: id });
-                                setAsyncLabels({ ...asyncLabels, [field.key]: label });
-                              }}
-                              fetchOptions={field.fetchOptions!}
-                            />
-                            {tempFilter[field.key] && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const next = { ...tempFilter };
-                                  delete next[field.key];
-                                  setTempFilter(next);
-                                }}
-                                className="rounded-lg p-2 text-default-400 hover:bg-default-200 hover:text-danger"
-                                aria-label={`Hapus filter ${field.label}`}
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <Select
-                            aria-label={field.label}
-                            selectedKeys={[tempFilter[field.key] || '']}
-                            onSelectionChange={(keys) =>
-                              setTempFilter({ ...tempFilter, [field.key]: (Array.from(keys)[0] as string) ?? '' })
-                            }
-                            size="sm"
-                            className="w-full"
-                          >
-                            {[
-                              <SelectItem key="">{`Semua ${field.label}`}</SelectItem>,
-                              ...(field.options ?? []).map((opt) => (
-                                <SelectItem key={opt.value}>{opt.label}</SelectItem>
-                              )),
-                            ]}
-                          </Select>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between border-t border-default-200 pt-4">
+                title="Filter"
+                size="lg"
+                footer={
+                  <>
                     <button
                       onClick={() => {
                         setTempFilter({});
                         setFilter({});
                         setIsFilterOpen(false);
                       }}
-                      className="text-xs font-bold uppercase tracking-wider text-danger hover:text-danger-600"
+                      className="mr-auto text-xs font-bold uppercase tracking-wider text-danger hover:text-danger-600"
                     >
                       Reset Semua
                     </button>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => setIsFilterOpen(false)}
-                        className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-default-500 hover:text-foreground"
-                      >
-                        Batal
-                      </button>
-                      <button
-                        onClick={() => {
-                          setFilter(tempFilter);
-                          setIsFilterOpen(false);
-                        }}
-                        className="rounded-xl bg-primary px-6 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                      >
-                        Terapkan
-                      </button>
+                    <button
+                      onClick={() => setIsFilterOpen(false)}
+                      className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-default-500 hover:text-foreground"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFilter(tempFilter);
+                        setIsFilterOpen(false);
+                      }}
+                      className="rounded-xl bg-primary px-6 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Terapkan
+                    </button>
+                  </>
+                }
+              >
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {filterFields.map((field) => (
+                    <div key={field.key} className="min-w-0 space-y-2">
+                      <label className="px-1 text-[10px] font-bold uppercase text-default-500">
+                        {field.label}
+                      </label>
+                      {field.type === 'text' ? (
+                        <input
+                          type="text"
+                          placeholder={field.placeholder}
+                          value={tempFilter[field.key] || ''}
+                          onChange={(e) => setTempFilter({ ...tempFilter, [field.key]: e.target.value })}
+                          className="w-full rounded-xl border border-default-200 bg-default-50 px-4 py-2 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        />
+                      ) : field.type === 'async-select' ? (
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <AsyncSearchSelect
+                            className="min-w-0 flex-1"
+                            placeholder={field.placeholder ?? `Cari ${field.label.toLowerCase()}...`}
+                            selectedId={tempFilter[field.key] || ''}
+                            selectedLabel={asyncLabels[field.key]}
+                            onSelect={(id, label) => {
+                              setTempFilter({ ...tempFilter, [field.key]: id });
+                              setAsyncLabels({ ...asyncLabels, [field.key]: label });
+                            }}
+                            fetchOptions={field.fetchOptions!}
+                          />
+                          {tempFilter[field.key] && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = { ...tempFilter };
+                                delete next[field.key];
+                                setTempFilter(next);
+                              }}
+                              className="rounded-lg p-2 text-default-400 hover:bg-default-200 hover:text-danger"
+                              aria-label={`Hapus filter ${field.label}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <Select
+                          aria-label={field.label}
+                          selectedKeys={[tempFilter[field.key] || '']}
+                          onSelectionChange={(keys) =>
+                            setTempFilter({ ...tempFilter, [field.key]: (Array.from(keys)[0] as string) ?? '' })
+                          }
+                          size="sm"
+                          className="w-full"
+                        >
+                          {[
+                            <SelectItem key="">{`Semua ${field.label}`}</SelectItem>,
+                            ...(field.options ?? []).map((opt) => (
+                              <SelectItem key={opt.value}>{opt.label}</SelectItem>
+                            )),
+                          ]}
+                        </Select>
+                      )}
                     </div>
-                  </div>
+                  ))}
                 </div>
-              </PopoverPortal>
+              </AppModal>
             </div>
 
             <button
@@ -362,7 +345,6 @@ export function DataGrid<T = any>({
 
             <div className="relative flex-shrink-0">
               <button
-                ref={settingsButtonRef}
                 onClick={() => {
                   setIsSettingsOpen((v) => !v);
                   setIsFilterOpen(false);
@@ -377,110 +359,101 @@ export function DataGrid<T = any>({
                 <Settings className="h-4 w-4" />
               </button>
 
-              <PopoverPortal
-                anchorRef={settingsButtonRef}
+              <AppModal
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
-                width={280}
+                title="Pengaturan Tampilan"
+                size="sm"
               >
-                <div className="rounded-2xl border border-default-200 bg-white p-6 shadow-2xl">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-foreground">Pengaturan Tampilan</h4>
-                    <button onClick={() => setIsSettingsOpen(false)} className="text-default-400 hover:text-foreground">
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-
-                  <div className="mb-5">
-                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-default-500">Tampilan Data</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(
-                        [
-                          { mode: 'auto' as ViewMode, label: 'Otomatis', icon: MonitorSmartphone },
-                          { mode: 'table' as ViewMode, label: 'Tabel', icon: Rows3 },
-                          { mode: 'card' as ViewMode, label: 'Kartu', icon: LayoutGrid },
-                        ]
-                      ).map(({ mode, label, icon: Icon }) => (
-                        <button
-                          key={mode}
-                          onClick={() => setViewMode(mode)}
-                          className={`flex flex-col items-center justify-center gap-1 rounded-lg py-2 text-xs font-bold transition-all ${
-                            viewMode === mode
-                              ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                              : 'bg-default-100 text-default-500 hover:bg-default-200'
-                          }`}
-                        >
-                          <Icon className="h-3.5 w-3.5" />
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {sortableColumns.length > 0 && (
-                    <div className="mb-5">
-                      <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-default-500">Urutkan</p>
-                      <Select
-                        aria-label="Urutkan berdasarkan"
-                        selectedKeys={[activeSortKey]}
-                        onSelectionChange={(keys) => applySort(Array.from(keys)[0] as string, activeSortDir || 'asc')}
-                        size="sm"
-                        className="mb-2 w-full"
+                <div className="mb-5">
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-default-500">Tampilan Data</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(
+                      [
+                        { mode: 'auto' as ViewMode, label: 'Otomatis', icon: MonitorSmartphone },
+                        { mode: 'table' as ViewMode, label: 'Tabel', icon: Rows3 },
+                        { mode: 'card' as ViewMode, label: 'Kartu', icon: LayoutGrid },
+                      ]
+                    ).map(({ mode, label, icon: Icon }) => (
+                      <button
+                        key={mode}
+                        onClick={() => setViewMode(mode)}
+                        className={`flex flex-col items-center justify-center gap-1 rounded-lg py-2 text-xs font-bold transition-all ${
+                          viewMode === mode
+                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                            : 'bg-default-100 text-default-500 hover:bg-default-200'
+                        }`}
                       >
-                        {sortableColumns.map((c) => (
-                          <SelectItem key={c.key}>{c.label}</SelectItem>
-                        ))}
-                      </Select>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => applySort(activeSortKey, 'asc')}
-                          className={`flex items-center justify-center gap-1 rounded-lg py-2 text-xs font-bold transition-all ${
-                            activeSortDir === 'asc'
-                              ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                              : 'bg-default-100 text-default-500 hover:bg-default-200'
-                          }`}
-                        >
-                          <ChevronUp className="h-3 w-3" /> Naik
-                        </button>
-                        <button
-                          onClick={() => applySort(activeSortKey, 'desc')}
-                          className={`flex items-center justify-center gap-1 rounded-lg py-2 text-xs font-bold transition-all ${
-                            activeSortDir === 'desc'
-                              ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                              : 'bg-default-100 text-default-500 hover:bg-default-200'
-                          }`}
-                        >
-                          <ChevronDown className="h-3 w-3" /> Turun
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-default-500">
-                      Baris per halaman
-                    </p>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[10, 20, 50, 100].map((v) => (
-                        <button
-                          key={v}
-                          onClick={() => {
-                            setSize(v);
-                            setPage(1);
-                          }}
-                          className={`rounded-lg py-2 text-xs font-bold transition-all ${
-                            size === v
-                              ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                              : 'bg-default-100 text-default-500 hover:bg-default-200'
-                          }`}
-                        >
-                          {v}
-                        </button>
-                      ))}
-                    </div>
+                        <Icon className="h-3.5 w-3.5" />
+                        {label}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </PopoverPortal>
+
+                {sortableColumns.length > 0 && (
+                  <div className="mb-5">
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-default-500">Urutkan</p>
+                    <Select
+                      aria-label="Urutkan berdasarkan"
+                      selectedKeys={[activeSortKey]}
+                      onSelectionChange={(keys) => applySort(Array.from(keys)[0] as string, activeSortDir || 'asc')}
+                      size="sm"
+                      className="mb-2 w-full"
+                    >
+                      {sortableColumns.map((c) => (
+                        <SelectItem key={c.key}>{c.label}</SelectItem>
+                      ))}
+                    </Select>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => applySort(activeSortKey, 'asc')}
+                        className={`flex items-center justify-center gap-1 rounded-lg py-2 text-xs font-bold transition-all ${
+                          activeSortDir === 'asc'
+                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                            : 'bg-default-100 text-default-500 hover:bg-default-200'
+                        }`}
+                      >
+                        <ChevronUp className="h-3 w-3" /> Naik
+                      </button>
+                      <button
+                        onClick={() => applySort(activeSortKey, 'desc')}
+                        className={`flex items-center justify-center gap-1 rounded-lg py-2 text-xs font-bold transition-all ${
+                          activeSortDir === 'desc'
+                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                            : 'bg-default-100 text-default-500 hover:bg-default-200'
+                        }`}
+                      >
+                        <ChevronDown className="h-3 w-3" /> Turun
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-default-500">
+                    Baris per halaman
+                  </p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[10, 20, 50, 100].map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => {
+                          setSize(v);
+                          setPage(1);
+                        }}
+                        className={`rounded-lg py-2 text-xs font-bold transition-all ${
+                          size === v
+                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                            : 'bg-default-100 text-default-500 hover:bg-default-200'
+                        }`}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </AppModal>
             </div>
           </div>
         </div>
