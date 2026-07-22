@@ -7,6 +7,8 @@ import type { PagedFetchOptions } from './async-search-select';
 import { ProductSearchSelect } from './product-search-select';
 import { CurrencyInput } from './currency-input';
 import { NumberInput } from './number-input';
+import { useBusinessContext } from '../context/business-context';
+import { formatCurrency as formatMoney } from '../lib/currency';
 import type { PosInvoiceType, PosProduct } from '../lib/types';
 
 export interface ItemRow {
@@ -48,10 +50,6 @@ export function calcEstimatedProfit(items: ItemRow[]): number {
   }, 0);
 }
 
-export function formatCurrency(value: number) {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
-}
-
 interface ItemRowsEditorProps {
   items: ItemRow[];
   onChange: (items: ItemRow[]) => void;
@@ -61,6 +59,10 @@ interface ItemRowsEditorProps {
 
 /** Editor baris barang faktur (produk/qty/harga) — dipakai di form Buat Faktur & Edit Draft. */
 export function ItemRowsEditor({ items, onChange, invoiceType, fetchProductOptions }: ItemRowsEditorProps) {
+  const { activeMembership } = useBusinessContext();
+  function formatCurrency(value: number | string) {
+    return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
+  }
   const [showPurchasePrice, setShowPurchasePrice] = useState(true);
 
   function updateItem(index: number, patch: Partial<ItemRow>) {

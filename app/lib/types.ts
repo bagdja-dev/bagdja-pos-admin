@@ -16,6 +16,10 @@ export interface PosBusiness {
   id: string;
   owner_user_id: string;
   name: string;
+  /** Kode ISO-4217, mis. 'IDR'/'MYR'/'THB' — dipakai `formatCurrency`. */
+  currency: string;
+  /** Tag BCP-47, mis. 'id-ID'/'ms-MY' — menentukan bahasa UI & format angka/tanggal. */
+  locale: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;

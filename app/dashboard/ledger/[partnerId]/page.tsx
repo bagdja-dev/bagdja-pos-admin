@@ -11,6 +11,7 @@ import { LoadingSpinner } from '../../../components/loading-spinner';
 import { NoBusinessState } from '../../../components/no-business-state';
 import { StickyHeader } from '../../../components/sticky-header';
 import { apiClient, ApiError, buildGridQueryString } from '../../../lib/api-client';
+import { formatCurrency as formatMoney } from '../../../lib/currency';
 import { useBusinessContext } from '../../../context/business-context';
 import {
   PAYMENT_STATUS_LABELS,
@@ -34,15 +35,12 @@ interface PartnerSummary {
   balance: number;
 }
 
-function formatCurrency(value: number | string) {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
-    Number(value),
-  );
-}
-
 export default function LedgerPartnerDetailPage() {
   const params = useParams<{ partnerId: string }>();
-  const { businessId, loading: businessLoading } = useBusinessContext();
+  const { businessId, activeMembership, loading: businessLoading } = useBusinessContext();
+  function formatCurrency(value: number | string) {
+    return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
+  }
 
   const [summary, setSummary] = useState<PartnerSummary | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(true);

@@ -29,6 +29,7 @@ import { StickyHeader } from '../../../components/sticky-header';
 import { ReadOnlyField } from '../../../components/read-only-field';
 import { ViewModeToggle } from '../../../components/view-mode-toggle';
 import { apiClient, ApiError } from '../../../lib/api-client';
+import { formatCurrency as formatMoney } from '../../../lib/currency';
 import { useBusinessContext } from '../../../context/business-context';
 import { useViewMode } from '../../../hooks/use-view-mode';
 import {
@@ -53,17 +54,14 @@ function isAmountBasedType(type: PosInvoiceType): boolean {
   return type === 'capital' || type === 'withdrawal' || type === 'kasbon';
 }
 
-function formatCurrency(value: string) {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
-    Number(value),
-  );
-}
-
 export default function InvoiceDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { businessId, activeMembership, role, loading: businessLoading } = useBusinessContext();
   const canSeeProfit = hasMinRole(role ?? '', 'manager');
+  function formatCurrency(value: number | string) {
+    return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
+  }
   const { mode: itemsViewMode, setMode: setItemsViewMode, showCards: showItemCards } = useViewMode(
     'view-mode:invoice-items',
   );

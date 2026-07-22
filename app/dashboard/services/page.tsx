@@ -12,19 +12,17 @@ import { NoBusinessState } from '../../components/no-business-state';
 import { StickyHeader } from '../../components/sticky-header';
 import { useNewShortcut } from '../../hooks/use-new-shortcut';
 import { apiClient, ApiError, buildGridQueryString } from '../../lib/api-client';
+import { formatCurrency as formatMoney } from '../../lib/currency';
 import { useBusinessContext } from '../../context/business-context';
 import { hasMinRole, type GridResult, type ServiceItem } from '../../lib/types';
 
 const EMPTY_FORM = { name: '', default_price: '0', is_active: true };
 
-function formatCurrency(value: string) {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
-    Number(value),
-  );
-}
-
 export default function ServicesPage() {
-  const { businessId, role, loading: businessLoading } = useBusinessContext();
+  const { businessId, activeMembership, role, loading: businessLoading } = useBusinessContext();
+  function formatCurrency(value: number | string) {
+    return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
+  }
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ServiceItem | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);

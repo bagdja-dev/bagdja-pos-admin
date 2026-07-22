@@ -14,7 +14,6 @@ import {
   ItemRowsEditor,
   calcEstimatedProfit,
   calcGrandTotal,
-  formatCurrency,
   type ItemRow,
 } from '../../../../components/invoice-item-rows';
 import { ServiceRowsEditor, calcServiceTotal, type ServiceRow } from '../../../../components/invoice-service-rows';
@@ -23,6 +22,7 @@ import { NoBusinessState } from '../../../../components/no-business-state';
 import { QuickAddContactModal } from '../../../../components/quick-add-contact-modal';
 import { ReadOnlyField } from '../../../../components/read-only-field';
 import { apiClient, ApiError } from '../../../../lib/api-client';
+import { formatCurrency as formatMoney } from '../../../../lib/currency';
 import { useBusinessContext } from '../../../../context/business-context';
 import {
   INVOICE_TYPE_LABELS,
@@ -49,7 +49,10 @@ function isAmountBasedType(type: PosInvoiceType): boolean {
 export default function EditInvoicePage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { businessId, loading: businessLoading } = useBusinessContext();
+  const { businessId, activeMembership, loading: businessLoading } = useBusinessContext();
+  function formatCurrency(value: number | string) {
+    return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
+  }
 
   const [invoice, setInvoice] = useState<PosInvoice | null>(null);
   const [locationLabel, setLocationLabel] = useState('');

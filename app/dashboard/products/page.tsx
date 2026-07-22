@@ -16,6 +16,7 @@ import { StickyHeader } from '../../components/sticky-header';
 import { TagInput } from '../../components/tag-input';
 import { useNewShortcut } from '../../hooks/use-new-shortcut';
 import { apiClient, ApiError, buildGridQueryString } from '../../lib/api-client';
+import { formatCurrency as formatMoney } from '../../lib/currency';
 import { useBusinessContext } from '../../context/business-context';
 import { hasMinRole, type GridResult, type PosProduct } from '../../lib/types';
 
@@ -34,14 +35,11 @@ const BarcodeScannerModal = dynamic(
   { ssr: false },
 );
 
-function formatCurrency(value: string) {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
-    Number(value),
-  );
-}
-
 export default function ProductsPage() {
-  const { businessId, role, loading: businessLoading } = useBusinessContext();
+  const { businessId, activeMembership, role, loading: businessLoading } = useBusinessContext();
+  function formatCurrency(value: number | string) {
+    return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
+  }
   const [modalOpen, setModalOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [editing, setEditing] = useState<PosProduct | null>(null);

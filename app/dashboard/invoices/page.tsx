@@ -13,6 +13,7 @@ import { NoBusinessState } from '../../components/no-business-state';
 import { StickyHeader } from '../../components/sticky-header';
 import { useNewShortcut } from '../../hooks/use-new-shortcut';
 import { apiClient, buildGridQueryString } from '../../lib/api-client';
+import { formatCurrency as formatMoney } from '../../lib/currency';
 import { useBusinessContext } from '../../context/business-context';
 import {
   hasMinRole,
@@ -33,11 +34,6 @@ const PARTY_FILTER_CONTACT_TYPE_LABELS: Record<PosContactType, string> = {
   borrower: 'Peminjam (Kasbon)',
 };
 
-function formatCurrency(value: string | number) {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
-    Number(value),
-  );
-}
 
 const STATUS_COLOR: Record<string, 'default' | 'primary' | 'success' | 'danger'> = {
   draft: 'default',
@@ -46,13 +42,15 @@ const STATUS_COLOR: Record<string, 'default' | 'primary' | 'success' | 'danger'>
   void: 'danger',
 };
 
-function renderProfit(value: string | number) {
+function renderProfit(value: string | number, currency?: string, locale?: string) {
   const n = Number(value);
-  return <span className={`font-medium ${n < 0 ? 'text-danger' : 'text-success'}`}>{formatCurrency(n)}</span>;
+  return (
+    <span className={`font-medium ${n < 0 ? 'text-danger' : 'text-success'}`}>{formatMoney(n, currency, locale)}</span>
+  );
 }
 
 /** Kartu faktur untuk mode mobile — seluruh kartu bisa ditekan langsung ke halaman detail. */
-function renderInvoiceCard(row: PosInvoice, canSeeProfit: boolean) {
+function renderInvoiceCard(row: PosInvoice, canSeeProfit: boolean, currency?: string, locale?: string) {
   return (
     <Link
       href={`/dashboard/invoices/${row.id}`}
@@ -83,12 +81,12 @@ function renderInvoiceCard(row: PosInvoice, canSeeProfit: boolean) {
       <div className="flex items-end justify-between border-t border-default-100 pt-3">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-wider text-default-400">Total</p>
-          <p className="text-base font-bold text-foreground">{formatCurrency(row.grand_total)}</p>
+          <p className="text-base font-bold text-foreground">{formatMoney(row.grand_total, currency, locale)}</p>
         </div>
         {row.payment_status !== 'not_applicable' && row.outstanding ? (
           <div className="text-right">
             <p className="text-[10px] font-bold uppercase tracking-wider text-default-400">Sisa Bayar</p>
-            <p className="text-sm font-medium text-danger">{formatCurrency(row.outstanding)}</p>
+            <p className="text-sm font-medium text-danger">{formatMoney(row.outstanding, currency, locale)}</p>
           </div>
         ) : (
           <p className="text-xs text-default-400">{PAYMENT_STATUS_LABELS[row.payment_status]}</p>
@@ -98,7 +96,7 @@ function renderInvoiceCard(row: PosInvoice, canSeeProfit: boolean) {
       {canSeeProfit && row.estimated_profit != null && (
         <div className="flex items-center justify-between text-xs">
           <span className="text-default-400">Est. Untung</span>
-          {renderProfit(row.estimated_profit)}
+          {renderProfit(row.estimated_profit, currency, locale)}
         </div>
       )}
 
@@ -109,8 +107,11 @@ function renderInvoiceCard(row: PosInvoice, canSeeProfit: boolean) {
 
 export default function InvoicesPage() {
   const router = useRouter();
-  const { businessId, role, loading: businessLoading } = useBusinessContext();
+  const { businessId, activeMembership, role, loading: businessLoading } = useBusinessContext();
   const canSeeProfit = hasMinRole(role ?? '', 'manager');
+  function formatCurrency(value: number | string) {
+    return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
+  }
 
   useNewShortcut(() => router.push('/dashboard/invoices/new'));
 
@@ -232,7 +233,12 @@ export default function InvoicesPage() {
           {
             key: 'estimated_profit',
             label: 'Est. Untung',
-            render: (v: string | null) => (v == null ? <span className="text-default-400">—</span> : renderProfit(v)),
+            render: (v: string | null) =>
+              v == null ? (
+                <span className="text-default-400">—</span>
+              ) : (
+                renderProfit(v, activeMembership?.business.currency, activeMembership?.business.locale)
+              ),
           } as GridColumn<PosInvoice>,
         ]
       : []),
@@ -315,7 +321,9 @@ export default function InvoicesPage() {
         defaultSort="created_at:desc"
         rowKey={(row) => row.id}
         emptyState={{ title: 'Belum ada faktur', description: 'Buat faktur pertama untuk mulai transaksi.', icon: <Receipt className="h-8 w-8 text-default-400" /> }}
-        renderCard={(row) => renderInvoiceCard(row, canSeeProfit)}
+        renderCard={(row) =>
+          renderInvoiceCard(row, canSeeProfit, activeMembership?.business.currency, activeMembership?.business.locale)
+        }
       />
     </div>
   );

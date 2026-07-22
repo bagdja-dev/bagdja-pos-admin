@@ -10,6 +10,7 @@ import { DataGrid, type GridColumn } from '../../../components/data-grid';
 import { LoadingSpinner } from '../../../components/loading-spinner';
 import { NoBusinessState } from '../../../components/no-business-state';
 import { apiClient, ApiError, buildGridQueryString } from '../../../lib/api-client';
+import { formatCurrency as formatMoney } from '../../../lib/currency';
 import { useBusinessContext } from '../../../context/business-context';
 import type { GridResult, PosPaymentLedger } from '../../../lib/types';
 
@@ -19,12 +20,6 @@ interface LocationCashSummary {
   cashIn: number;
   cashOut: number;
   net: number;
-}
-
-function formatCurrency(value: number | string) {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
-    Number(value),
-  );
 }
 
 function entryTypeLabel(entryType: PosPaymentLedger['entry_type']) {
@@ -44,7 +39,10 @@ export default function CashSummaryLocationDetailPage() {
   const params = useParams<{ locationId: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { businessId, loading: businessLoading } = useBusinessContext();
+  const { businessId, activeMembership, loading: businessLoading } = useBusinessContext();
+  function formatCurrency(value: number | string) {
+    return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
+  }
 
   const [from, setFrom] = useState(searchParams.get('from') ?? '');
   const [to, setTo] = useState(searchParams.get('to') ?? '');

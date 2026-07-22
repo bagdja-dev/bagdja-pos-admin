@@ -11,6 +11,7 @@ import { PageDescription } from '../../components/page-description';
 import { StickyHeader } from '../../components/sticky-header';
 import { ViewModeToggle } from '../../components/view-mode-toggle';
 import { apiClient, ApiError } from '../../lib/api-client';
+import { formatCurrency as formatMoney } from '../../lib/currency';
 import { useBusinessContext } from '../../context/business-context';
 import { useViewMode } from '../../hooks/use-view-mode';
 
@@ -30,14 +31,11 @@ interface CashSummary {
   byLocation: CashByLocation[];
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
-    value,
-  );
-}
-
 export default function CashSummaryPage() {
-  const { businessId, loading: businessLoading } = useBusinessContext();
+  const { businessId, activeMembership, loading: businessLoading } = useBusinessContext();
+  function formatCurrency(value: number | string) {
+    return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
+  }
   const { mode: viewMode, setMode: setViewMode, showCards } = useViewMode('view-mode:cash-summary');
 
   const [from, setFrom] = useState('');
