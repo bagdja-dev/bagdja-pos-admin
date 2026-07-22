@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@heroui/react';
+import { Button, Select, SelectItem } from '@heroui/react';
 
 import { apiClient, ApiError } from '../../../lib/api-client';
+import { SUPPORTED_CURRENCIES } from '../../../lib/currency';
 import { useBusinessContext } from '../../../context/business-context';
 import type { PosBusiness } from '../../../lib/types';
 
@@ -12,6 +13,7 @@ export default function NewBusinessPage() {
   const router = useRouter();
   const { refresh, switchBusiness } = useBusinessContext();
   const [name, setName] = useState('');
+  const [currency, setCurrency] = useState('IDR');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +26,7 @@ export default function NewBusinessPage() {
     try {
       const business = await apiClient<PosBusiness>('/api/businesses', {
         method: 'POST',
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify({ name: name.trim(), currency }),
       });
       await refresh();
       switchBusiness(business.id);
@@ -61,6 +63,17 @@ export default function NewBusinessPage() {
             className="block w-full rounded-md border border-default-200 bg-background px-3 py-2 text-sm placeholder:text-default-400 focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
+
+        <Select
+          label="Mata Uang"
+          description="Tidak bisa diubah lagi setelah faktur pertama dibuat."
+          selectedKeys={[currency]}
+          onSelectionChange={(keys) => setCurrency((Array.from(keys)[0] as string) ?? 'IDR')}
+        >
+          {SUPPORTED_CURRENCIES.map((c) => (
+            <SelectItem key={c.value}>{c.label}</SelectItem>
+          ))}
+        </Select>
 
         {error && <p className="text-sm text-danger">{error}</p>}
 

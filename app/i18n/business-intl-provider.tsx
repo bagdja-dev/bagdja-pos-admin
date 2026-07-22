@@ -3,12 +3,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 
-import { useBusinessContext } from '../context/business-context';
+import { getCookie } from '../lib/cookies';
 import idMessages from '../../messages/id.json';
 
 type Messages = Record<string, unknown>;
 
 const DEFAULT_LOCALE = 'id-ID';
+const LANG_COOKIE = 'lang';
 
 // Katalog non-default di-dynamic-import, bukan static import semua sekaligus
 // — app ini PWA/TWA yang diinstall di HP, jangan bebani semua bisnis unduh
@@ -18,46 +19,43 @@ const MESSAGE_LOADERS: Record<string, () => Promise<{ default: Messages }>> = {
 };
 
 /**
- * Bahasa UI mengikuti locale BISNIS aktif (bukan per-user) — satu toko fisik
- * biasanya satu bahasa staf, terlepas siapa yang login. Locale baru diketahui
- * SETELAH `/api/me` resolve (bukan dari URL), jadi provider ini ada di dalam
- * `BusinessProvider`, dan `id.json` di-static-import supaya render pertama
- * (sebelum business context resolve) langsung dapat Bahasa Indonesia tanpa
- * flash kosong — sesuai default kolom `locale` di DB.
+ * Bahasa UI adalah preferensi TAMPILAN, bukan data bisnis — disimpan di
+ * cookie `lang` (bukan kolom `locale` di pos_businesses, yang dibiarkan ada
+ * tapi tidak dipakai), supaya bisa dibaca lewat header di sisi backend juga
+ * (proxy route ikut kirim `X-Locale`) tanpa perlu round-trip API di sini.
+ * Ganti bahasa (lihat halaman Pengaturan) reload halaman — locale cuma
+ * dibaca sekali saat mount, bukan reaktif terhadap perubahan cookie.
  */
 export function BusinessIntlProvider({ children }: { children: ReactNode }) {
-  const { activeMembership } = useBusinessContext();
-  const locale = activeMembership?.business.locale ?? DEFAULT_LOCALE;
-
+  const [locale, setLocale] = useState(DEFAULT_LOCALE);
   const [messages, setMessages] = useState<Messages>(idMessages);
-  const [loadedLocale, setLoadedLocale] = useState(DEFAULT_LOCALE);
 
   useEffect(() => {
-    if (locale === loadedLocale) return;
-    const loader = MESSAGE_LOADERS[locale];
+    const cookieLocale = getCookie(LANG_COOKIE) ?? DEFAULT_LOCALE;
+    const loader = MESSAGE_LOADERS[cookieLocale];
     if (!loader) {
+      setLocale(DEFAULT_LOCALE);
       setMessages(idMessages);
-      setLoadedLocale(DEFAULT_LOCALE);
       return;
     }
     let cancelled = false;
     loader().then((mod) => {
       if (!cancelled) {
+        setLocale(cookieLocale);
         setMessages(mod.default);
-        setLoadedLocale(locale);
       }
     });
     return () => {
       cancelled = true;
     };
-  }, [locale, loadedLocale]);
+  }, []);
 
   useEffect(() => {
-    document.documentElement.lang = loadedLocale.split('-')[0];
-  }, [loadedLocale]);
+    document.documentElement.lang = locale.split('-')[0];
+  }, [locale]);
 
   return (
-    <NextIntlClientProvider locale={loadedLocale} messages={messages}>
+    <NextIntlClientProvider locale={locale} messages={messages}>
       {children}
     </NextIntlClientProvider>
   );

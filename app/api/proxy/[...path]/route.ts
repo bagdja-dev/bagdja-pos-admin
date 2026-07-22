@@ -21,6 +21,15 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
     if (body) options.body = body;
   }
 
+  // Bahasa UI disimpan di cookie `lang` (bukan data bisnis di DB — lihat
+  // BusinessIntlProvider), diteruskan sebagai header ke backend supaya
+  // konten yang di-generate server-side nanti (mis. notifikasi) bisa ikut
+  // localized tanpa perlu jalur plumbing baru lagi.
+  const lang = request.cookies.get('lang')?.value;
+  if (lang) {
+    options.headers = { ...(options.headers as Record<string, string>), 'X-Locale': lang };
+  }
+
   const result = await backendFetch(path, options);
 
   if (result.status === 401) {
