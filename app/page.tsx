@@ -1052,6 +1052,7 @@ export default function LandingPage() {
             </div>
             <div className="flex gap-8 text-sm text-gray-500">
               <Link href="/privacy-policy" className="transition-colors hover:text-gray-900">Kebijakan Privasi</Link>
+              <Link href="/account-deletion" className="transition-colors hover:text-gray-900">Hapus Akun</Link>
               <Link href="#" className="transition-colors hover:text-gray-900">Syarat & Ketentuan</Link>
               <Link href="#contact" className="transition-colors hover:text-gray-900">Kontak</Link>
             </div>
