@@ -1,0 +1,19 @@
+{
+  "sidebar": {
+    "groupOperasional": "Operasional",
+    "dashboard": "Dashboard",
+    "faktur": "Faktur",
+    "stok": "Stok",
+    "groupDataMaster": "Data Master",
+    "lokasi": "Lokasi",
+    "produk": "Produk",
+    "jasa": "Jasa",
+    "kontak": "Kontak",
+    "tim": "Tim",
+    "groupLaporan": "Laporan",
+    "omzet": "Omzet",
+    "piutangHutang": "Piutang/Hutang",
+    "kas": "Kas",
+    "pengaturan": "Pengaturan"
+  }
+}
