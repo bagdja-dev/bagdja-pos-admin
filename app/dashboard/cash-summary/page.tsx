@@ -81,15 +81,17 @@ export default function CashSummaryPage() {
           </PageDescription>
         </div>
 
-        <div className="flex flex-wrap items-end gap-3">
-          <Input type="date" label="Dari Tanggal" className="w-48" value={from} onValueChange={setFrom} />
-          <Input type="date" label="Sampai Tanggal" className="w-48" value={to} onValueChange={setTo} />
-          <Button variant="flat" onPress={load}>
+        <div className="flex items-end gap-2 overflow-x-auto sm:gap-3">
+          <Input type="date" label="Dari" size="sm" className="min-w-[110px] flex-1" value={from} onValueChange={setFrom} />
+          <Input type="date" label="Sampai" size="sm" className="min-w-[110px] flex-1" value={to} onValueChange={setTo} />
+          <Button variant="flat" size="sm" className="shrink-0" onPress={load}>
             Terapkan
           </Button>
           {(from || to) && (
             <Button
               variant="light"
+              size="sm"
+              className="shrink-0"
               onPress={() => {
                 setFrom('');
                 setTo('');
