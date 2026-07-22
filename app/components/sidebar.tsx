@@ -2,18 +2,20 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { useBusinessContext } from '../context/business-context';
 import { hasMinRole } from '../lib/types';
 
 interface NavItem {
-  label: string;
+  /** Key di namespace `sidebar` (messages/*.json) — label sebenarnya di-resolve di komponen lewat useTranslations. */
+  labelKey: string;
   href: string;
   icon: React.ReactNode;
 }
 
 interface NavGroup {
-  label: string;
+  labelKey: string;
   items: NavItem[];
 }
 
@@ -24,10 +26,10 @@ interface NavGroup {
 // baru scroll; jadi ini murni pemisah visual, tidak menambah interaksi apa pun.
 const navGroups: NavGroup[] = [
   {
-    label: 'Operasional',
+    labelKey: 'groupOperasional',
     items: [
       {
-        label: 'Dashboard',
+        labelKey: 'dashboard',
         href: '/dashboard',
         icon: (
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -36,7 +38,7 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        label: 'Faktur',
+        labelKey: 'faktur',
         href: '/dashboard/invoices',
         icon: (
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -45,7 +47,7 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        label: 'Stok',
+        labelKey: 'stok',
         href: '/dashboard/inventory',
         icon: (
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -56,10 +58,10 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: 'Data Master',
+    labelKey: 'groupDataMaster',
     items: [
       {
-        label: 'Lokasi',
+        labelKey: 'lokasi',
         href: '/dashboard/locations',
         icon: (
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -69,7 +71,7 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        label: 'Produk',
+        labelKey: 'produk',
         href: '/dashboard/products',
         icon: (
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -78,7 +80,7 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        label: 'Jasa',
+        labelKey: 'jasa',
         href: '/dashboard/services',
         icon: (
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -87,7 +89,7 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        label: 'Kontak',
+        labelKey: 'kontak',
         href: '/dashboard/contacts',
         icon: (
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -96,7 +98,7 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        label: 'Tim',
+        labelKey: 'tim',
         href: '/dashboard/staff',
         icon: (
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -107,10 +109,10 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: 'Laporan',
+    labelKey: 'groupLaporan',
     items: [
       {
-        label: 'Omzet',
+        labelKey: 'omzet',
         href: '/dashboard/reports/omzet',
         icon: (
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -119,7 +121,7 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        label: 'Piutang/Hutang',
+        labelKey: 'piutangHutang',
         href: '/dashboard/ledger',
         icon: (
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -128,7 +130,7 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        label: 'Kas',
+        labelKey: 'kas',
         href: '/dashboard/cash-summary',
         icon: (
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -143,7 +145,7 @@ const navGroups: NavGroup[] = [
 // Owner-only, ditambahkan kondisional saat render (bukan baked-in ke
 // `navGroups`) — ini pengenalan pertama gating berbasis role di sidebar.
 const SETTINGS_NAV_ITEM: NavItem = {
-  label: 'Pengaturan',
+  labelKey: 'pengaturan',
   href: '/dashboard/settings',
   icon: (
     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -164,9 +166,10 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const t = useTranslations('sidebar');
   const { role } = useBusinessContext();
   const groups = hasMinRole(role ?? '', 'owner')
-    ? [...navGroups, { label: 'Lainnya', items: [SETTINGS_NAV_ITEM] }]
+    ? [...navGroups, { labelKey: 'groupLainnya', items: [SETTINGS_NAV_ITEM] }]
     : navGroups;
 
   return (
@@ -194,9 +197,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           {groups.map((group) => (
-            <div key={group.label} className="mb-4 last:mb-0">
+            <div key={group.labelKey} className="mb-4 last:mb-0">
               <p className="mb-1 px-3 text-[10px] font-bold uppercase tracking-wider text-default-400">
-                {group.label}
+                {t(group.labelKey)}
               </p>
               <ul className="space-y-1">
                 {group.items.map((item) => {
@@ -218,7 +221,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         `}
                       >
                         {item.icon}
-                        {item.label}
+                        {t(item.labelKey)}
                       </Link>
                     </li>
                   );

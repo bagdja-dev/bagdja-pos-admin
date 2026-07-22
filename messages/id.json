@@ -14,6 +14,41 @@
     "omzet": "Omzet",
     "piutangHutang": "Piutang/Hutang",
     "kas": "Kas",
+    "groupLainnya": "Lainnya",
     "pengaturan": "Pengaturan"
+  },
+  "roles": {
+    "owner": "Owner",
+    "manager": "Manager",
+    "cashier": "Kasir",
+    "mechanic": "Mekanik"
+  },
+  "dashboard": {
+    "subtitle": "Dashboard bisnis Anda",
+    "yourRole": "Peran Anda",
+    "lockedLocation": "Lokasi Terkunci",
+    "allLocations": "Semua lokasi (Owner/Manager)",
+    "businessStatus": "Status Bisnis",
+    "active": "Aktif",
+    "inactive": "Nonaktif",
+    "hint": "Gunakan menu di sidebar untuk kelola Lokasi, Produk, Jasa, Kontak, Faktur, dan Tim."
+  },
+  "inventory": {
+    "title": "Dashboard Stok",
+    "subtitle": "Cari satu produk untuk lihat sebaran stoknya di semua lokasi.",
+    "productLabel": "Produk",
+    "productPlaceholder": "Cari nama, SKU, atau tag...",
+    "totalAllLocations": "Total Stok Semua Lokasi",
+    "minStock": "Stok minimum: {min} / lokasi",
+    "colLocation": "LOKASI",
+    "colType": "TIPE",
+    "colStock": "STOK",
+    "noLocations": "Bisnis ini belum punya lokasi",
+    "rack": "Rak",
+    "colRack": "RAK",
+    "colQty": "QTY",
+    "noRacks": "Belum dialokasikan ke rak manapun.",
+    "emptyHint": "Cari produk di atas untuk lihat sebaran stoknya.",
+    "loadError": "Gagal memuat sebaran stok"
   }
 }

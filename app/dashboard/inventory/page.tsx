@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Chip, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from '@heroui/react';
 import { PackageSearch } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { type PagedFetchResult } from '../../components/async-search-select';
 import { LoadingSpinner } from '../../components/loading-spinner';
@@ -27,6 +28,7 @@ interface SelectedProduct {
 
 export default function InventoryDashboardPage() {
   const { businessId, loading: businessLoading } = useBusinessContext();
+  const t = useTranslations('inventory');
 
   const [selectedProduct, setSelectedProduct] = useState<SelectedProduct | null>(null);
   const [distribution, setDistribution] = useState<ProductStockDistribution | null>(null);
@@ -63,7 +65,7 @@ export default function InventoryDashboardPage() {
     setError(null);
     apiClient<ProductStockDistribution>(`/api/businesses/${businessId}/products/${selectedProduct.id}/inventory`)
       .then(setDistribution)
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Gagal memuat sebaran stok'))
+      .catch((err) => setError(err instanceof ApiError ? err.message : t('loadError')))
       .finally(() => setLoadingDistribution(false));
     apiClient<RackForProduct[]>(`/api/businesses/${businessId}/products/${selectedProduct.id}/racks`)
       .then(setRacks)
@@ -76,13 +78,13 @@ export default function InventoryDashboardPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <StickyHeader>
-        <h1 className="text-2xl font-bold text-foreground">Dashboard Stok</h1>
-        <p className="text-sm text-default-500">Cari satu produk untuk lihat sebaran stoknya di semua lokasi.</p>
+        <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
+        <p className="text-sm text-default-500">{t('subtitle')}</p>
       </StickyHeader>
 
       <ProductSearchSelect
-        label="Produk"
-        placeholder="Cari nama, SKU, atau tag..."
+        label={t('productLabel')}
+        placeholder={t('productPlaceholder')}
         selectedId={selectedProduct?.id ?? ''}
         selectedLabel={selectedProduct?.label}
         onSelect={(id, label, raw) => {
@@ -104,21 +106,21 @@ export default function InventoryDashboardPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between rounded-2xl border border-default-200 bg-default-50 px-5 py-4">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">Total Stok Semua Lokasi</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">{t('totalAllLocations')}</p>
               <p className="text-2xl font-bold text-foreground">{distribution.total}</p>
             </div>
             {selectedProduct.minStock > 0 && (
-              <p className="text-xs text-default-500">Stok minimum: {selectedProduct.minStock} / lokasi</p>
+              <p className="text-xs text-default-500">{t('minStock', { min: selectedProduct.minStock })}</p>
             )}
           </div>
 
           <Table aria-label="Sebaran stok per lokasi">
             <TableHeader>
-              <TableColumn>LOKASI</TableColumn>
-              <TableColumn>TIPE</TableColumn>
-              <TableColumn>STOK</TableColumn>
+              <TableColumn>{t('colLocation')}</TableColumn>
+              <TableColumn>{t('colType')}</TableColumn>
+              <TableColumn>{t('colStock')}</TableColumn>
             </TableHeader>
-            <TableBody emptyContent="Bisnis ini belum punya lokasi">
+            <TableBody emptyContent={t('noLocations')}>
               {distribution.rows.map((row) => {
                 const isLow = selectedProduct.minStock > 0 && row.quantity < selectedProduct.minStock;
                 return (
@@ -137,13 +139,13 @@ export default function InventoryDashboardPage() {
           </Table>
 
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-default-500">Rak</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-default-500">{t('rack')}</p>
             {racks && racks.length > 0 ? (
               <Table aria-label="Sebaran rak">
                 <TableHeader>
-                  <TableColumn>LOKASI</TableColumn>
-                  <TableColumn>RAK</TableColumn>
-                  <TableColumn>QTY</TableColumn>
+                  <TableColumn>{t('colLocation')}</TableColumn>
+                  <TableColumn>{t('colRack')}</TableColumn>
+                  <TableColumn>{t('colQty')}</TableColumn>
                 </TableHeader>
                 <TableBody>
                   {racks.map((r) => (
@@ -156,14 +158,14 @@ export default function InventoryDashboardPage() {
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-sm text-default-500">Belum dialokasikan ke rak manapun.</p>
+              <p className="text-sm text-default-500">{t('noRacks')}</p>
             )}
           </div>
         </div>
       ) : (
         <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-default-200 bg-default-50 p-8 text-center">
           <PackageSearch className="mb-3 h-8 w-8 text-default-400" />
-          <p className="text-sm text-default-500">Cari produk di atas untuk lihat sebaran stoknya.</p>
+          <p className="text-sm text-default-500">{t('emptyHint')}</p>
         </div>
       )}
     </div>
