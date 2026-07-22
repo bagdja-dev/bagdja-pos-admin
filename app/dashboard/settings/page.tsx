@@ -17,6 +17,7 @@ import { hasMinRole, type PosBusiness } from '../../lib/types';
 // di sini bersamaan dengan menambahkan `messages/<locale>.json` baru.
 const SUPPORTED_LOCALES = [
   { value: 'id-ID', label: 'Bahasa Indonesia' },
+  { value: 'en-US', label: 'English' },
   { value: 'ms-MY', label: 'Bahasa Melayu (Malaysia)' },
   { value: 'fil-PH', label: 'Filipino (Philippines)' },
   { value: 'vi-VN', label: 'Tiếng Việt (Vietnam)' },

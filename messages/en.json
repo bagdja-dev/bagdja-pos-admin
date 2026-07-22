@@ -1,0 +1,54 @@
+{
+  "sidebar": {
+    "groupOperasional": "Operations",
+    "dashboard": "Dashboard",
+    "faktur": "Invoices",
+    "stok": "Stock",
+    "groupDataMaster": "Master Data",
+    "lokasi": "Locations",
+    "produk": "Products",
+    "jasa": "Services",
+    "kontak": "Contacts",
+    "tim": "Team",
+    "groupLaporan": "Reports",
+    "omzet": "Revenue",
+    "piutangHutang": "Receivables/Payables",
+    "kas": "Cash",
+    "groupLainnya": "Other",
+    "pengaturan": "Settings"
+  },
+  "roles": {
+    "owner": "Owner",
+    "manager": "Manager",
+    "cashier": "Cashier",
+    "mechanic": "Mechanic"
+  },
+  "dashboard": {
+    "subtitle": "Your business dashboard",
+    "yourRole": "Your Role",
+    "lockedLocation": "Locked Location",
+    "allLocations": "All locations (Owner/Manager)",
+    "businessStatus": "Business Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "hint": "Use the sidebar menu to manage Locations, Products, Services, Contacts, Invoices, and Team."
+  },
+  "inventory": {
+    "title": "Stock Dashboard",
+    "subtitle": "Search for a product to see its stock distribution across all locations.",
+    "productLabel": "Product",
+    "productPlaceholder": "Search name, SKU, or tag...",
+    "totalAllLocations": "Total Stock Across All Locations",
+    "minStock": "Minimum stock: {min} / location",
+    "colLocation": "LOCATION",
+    "colType": "TYPE",
+    "colStock": "STOCK",
+    "noLocations": "This business has no locations yet",
+    "rack": "Rack",
+    "colRack": "RACK",
+    "colQty": "QTY",
+    "noRacks": "Not yet allocated to any rack.",
+    "emptyHint": "Search for a product above to see its stock distribution.",
+    "loadError": "Failed to load stock distribution"
+  }
+}
