@@ -1,0 +1,54 @@
+{
+  "sidebar": {
+    "groupOperasional": "Operasi",
+    "dashboard": "Dashboard",
+    "faktur": "Invois",
+    "stok": "Stok",
+    "groupDataMaster": "Data Induk",
+    "lokasi": "Lokasi",
+    "produk": "Produk",
+    "jasa": "Perkhidmatan",
+    "kontak": "Kenalan",
+    "tim": "Pasukan",
+    "groupLaporan": "Laporan",
+    "omzet": "Perolehan",
+    "piutangHutang": "Belum Terima/Bayar",
+    "kas": "Tunai",
+    "groupLainnya": "Lain-lain",
+    "pengaturan": "Tetapan"
+  },
+  "roles": {
+    "owner": "Pemilik",
+    "manager": "Pengurus",
+    "cashier": "Juruwang",
+    "mechanic": "Mekanik"
+  },
+  "dashboard": {
+    "subtitle": "Dashboard perniagaan anda",
+    "yourRole": "Peranan Anda",
+    "lockedLocation": "Lokasi Terkunci",
+    "allLocations": "Semua lokasi (Pemilik/Pengurus)",
+    "businessStatus": "Status Perniagaan",
+    "active": "Aktif",
+    "inactive": "Tidak Aktif",
+    "hint": "Guna menu di bar sisi untuk urus Lokasi, Produk, Perkhidmatan, Kenalan, Invois, dan Pasukan."
+  },
+  "inventory": {
+    "title": "Dashboard Stok",
+    "subtitle": "Cari satu produk untuk lihat taburan stoknya di semua lokasi.",
+    "productLabel": "Produk",
+    "productPlaceholder": "Cari nama, SKU, atau tag...",
+    "totalAllLocations": "Jumlah Stok Semua Lokasi",
+    "minStock": "Stok minimum: {min} / lokasi",
+    "colLocation": "LOKASI",
+    "colType": "JENIS",
+    "colStock": "STOK",
+    "noLocations": "Perniagaan ini belum ada lokasi",
+    "rack": "Rak",
+    "colRack": "RAK",
+    "colQty": "KUANTITI",
+    "noRacks": "Belum diperuntukkan ke rak mana-mana.",
+    "emptyHint": "Cari produk di atas untuk lihat taburan stoknya.",
+    "loadError": "Gagal memuatkan taburan stok"
+  }
+}

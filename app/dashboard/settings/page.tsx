@@ -15,7 +15,12 @@ import { hasMinRole, type PosBusiness } from '../../lib/types';
 // Dibatasi ke locale yang katalog terjemahannya sudah ada (lihat
 // `app/i18n/business-intl-provider.tsx`'s MESSAGE_LOADERS) — tambahkan baris
 // di sini bersamaan dengan menambahkan `messages/<locale>.json` baru.
-const SUPPORTED_LOCALES = [{ value: 'id-ID', label: 'Bahasa Indonesia' }];
+const SUPPORTED_LOCALES = [
+  { value: 'id-ID', label: 'Bahasa Indonesia' },
+  { value: 'ms-MY', label: 'Bahasa Melayu (Malaysia)' },
+  { value: 'fil-PH', label: 'Filipino (Philippines)' },
+  { value: 'vi-VN', label: 'Tiếng Việt (Vietnam)' },
+];
 const LANG_COOKIE = 'lang';
 const DEFAULT_LOCALE = 'id-ID';
 

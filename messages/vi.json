@@ -1,0 +1,54 @@
+{
+  "sidebar": {
+    "groupOperasional": "Vận Hành",
+    "dashboard": "Tổng Quan",
+    "faktur": "Hóa Đơn",
+    "stok": "Tồn Kho",
+    "groupDataMaster": "Dữ Liệu Chính",
+    "lokasi": "Địa Điểm",
+    "produk": "Sản Phẩm",
+    "jasa": "Dịch Vụ",
+    "kontak": "Liên Hệ",
+    "tim": "Nhân Viên",
+    "groupLaporan": "Báo Cáo",
+    "omzet": "Doanh Thu",
+    "piutangHutang": "Công Nợ",
+    "kas": "Tiền Mặt",
+    "groupLainnya": "Khác",
+    "pengaturan": "Cài Đặt"
+  },
+  "roles": {
+    "owner": "Chủ Sở Hữu",
+    "manager": "Quản Lý",
+    "cashier": "Thu Ngân",
+    "mechanic": "Thợ Máy"
+  },
+  "dashboard": {
+    "subtitle": "Tổng quan doanh nghiệp của bạn",
+    "yourRole": "Vai Trò Của Bạn",
+    "lockedLocation": "Địa Điểm Cố Định",
+    "allLocations": "Tất cả địa điểm (Chủ sở hữu/Quản lý)",
+    "businessStatus": "Trạng Thái Doanh Nghiệp",
+    "active": "Hoạt Động",
+    "inactive": "Ngừng Hoạt Động",
+    "hint": "Dùng menu ở thanh bên để quản lý Địa Điểm, Sản Phẩm, Dịch Vụ, Liên Hệ, Hóa Đơn, và Nhân Viên."
+  },
+  "inventory": {
+    "title": "Tổng Quan Tồn Kho",
+    "subtitle": "Tìm một sản phẩm để xem phân bổ tồn kho ở tất cả địa điểm.",
+    "productLabel": "Sản Phẩm",
+    "productPlaceholder": "Tìm tên, SKU, hoặc tag...",
+    "totalAllLocations": "Tổng Tồn Kho Tất Cả Địa Điểm",
+    "minStock": "Tồn kho tối thiểu: {min} / địa điểm",
+    "colLocation": "ĐỊA ĐIỂM",
+    "colType": "LOẠI",
+    "colStock": "TỒN KHO",
+    "noLocations": "Doanh nghiệp này chưa có địa điểm nào",
+    "rack": "Kệ Hàng",
+    "colRack": "KỆ HÀNG",
+    "colQty": "SỐ LƯỢNG",
+    "noRacks": "Chưa được phân bổ vào kệ hàng nào.",
+    "emptyHint": "Tìm sản phẩm ở trên để xem phân bổ tồn kho.",
+    "loadError": "Không thể tải phân bổ tồn kho"
+  }
+}

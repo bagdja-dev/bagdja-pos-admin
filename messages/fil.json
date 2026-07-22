@@ -1,0 +1,54 @@
+{
+  "sidebar": {
+    "groupOperasional": "Operasyon",
+    "dashboard": "Dashboard",
+    "faktur": "Invoice",
+    "stok": "Imbentaryo",
+    "groupDataMaster": "Pangunahing Datos",
+    "lokasi": "Lokasyon",
+    "produk": "Produkto",
+    "jasa": "Serbisyo",
+    "kontak": "Kontak",
+    "tim": "Kawani",
+    "groupLaporan": "Ulat",
+    "omzet": "Benta",
+    "piutangHutang": "Singilin/Utang",
+    "kas": "Cash",
+    "groupLainnya": "Iba Pa",
+    "pengaturan": "Setting"
+  },
+  "roles": {
+    "owner": "May-ari",
+    "manager": "Manager",
+    "cashier": "Cashier",
+    "mechanic": "Mekaniko"
+  },
+  "dashboard": {
+    "subtitle": "Dashboard ng iyong negosyo",
+    "yourRole": "Ang Iyong Tungkulin",
+    "lockedLocation": "Nakatakdang Lokasyon",
+    "allLocations": "Lahat ng lokasyon (May-ari/Manager)",
+    "businessStatus": "Katayuan ng Negosyo",
+    "active": "Aktibo",
+    "inactive": "Hindi Aktibo",
+    "hint": "Gamitin ang menu sa sidebar para pamahalaan ang Lokasyon, Produkto, Serbisyo, Kontak, Invoice, at Kawani."
+  },
+  "inventory": {
+    "title": "Dashboard ng Imbentaryo",
+    "subtitle": "Maghanap ng isang produkto para makita ang distribusyon ng stock nito sa lahat ng lokasyon.",
+    "productLabel": "Produkto",
+    "productPlaceholder": "Maghanap ng pangalan, SKU, o tag...",
+    "totalAllLocations": "Kabuuang Stock sa Lahat ng Lokasyon",
+    "minStock": "Minimum na stock: {min} / lokasyon",
+    "colLocation": "LOKASYON",
+    "colType": "URI",
+    "colStock": "STOCK",
+    "noLocations": "Wala pang lokasyon ang negosyong ito",
+    "rack": "Estante",
+    "colRack": "ESTANTE",
+    "colQty": "DAMI",
+    "noRacks": "Hindi pa naitalaga sa anumang estante.",
+    "emptyHint": "Maghanap ng produkto sa itaas para makita ang distribusyon ng stock nito.",
+    "loadError": "Hindi na-load ang distribusyon ng stock"
+  }
+}

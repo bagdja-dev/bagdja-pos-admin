@@ -15,7 +15,9 @@ const LANG_COOKIE = 'lang';
 // — app ini PWA/TWA yang diinstall di HP, jangan bebani semua bisnis unduh
 // katalog bahasa yang tidak mereka pakai begitu makin banyak bahasa ditambah.
 const MESSAGE_LOADERS: Record<string, () => Promise<{ default: Messages }>> = {
-  // 'ms-MY': () => import('../../messages/ms.json'),
+  'ms-MY': () => import('../../messages/ms.json'),
+  'fil-PH': () => import('../../messages/fil.json'),
+  'vi-VN': () => import('../../messages/vi.json'),
 };
 
 /**
