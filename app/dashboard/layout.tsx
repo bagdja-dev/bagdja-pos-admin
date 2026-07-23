@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <div className="flex flex-1 flex-col overflow-hidden">
               <Topbar onMenuToggle={() => setSidebarOpen((v) => !v)} />
 
-              <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
+              <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pt-0">{children}</main>
             </div>
           </div>
         </RequireAuth>
