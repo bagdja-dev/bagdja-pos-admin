@@ -20,6 +20,7 @@ export interface PosBusiness {
   currency: string;
   /** Tag BCP-47, mis. 'id-ID'/'ms-MY' — menentukan bahasa UI & format angka/tanggal. */
   locale: string;
+  logo_url: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

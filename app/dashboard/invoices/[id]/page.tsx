@@ -383,6 +383,7 @@ export default function InvoiceDetailPage() {
           <PrintReceiptButton
             invoice={invoice}
             businessName={activeMembership?.business.name ?? ''}
+            logoUrl={activeMembership?.business.logo_url}
             locationName={activeMembership?.location?.name}
           />
         )}

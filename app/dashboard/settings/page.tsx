@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Button, Select, SelectItem } from '@heroui/react';
 
+import { BusinessLogoUploader } from '../../components/business-logo-uploader';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { NoBusinessState } from '../../components/no-business-state';
 import { StickyHeader } from '../../components/sticky-header';
@@ -31,6 +32,7 @@ export default function BusinessSettingsPage() {
 
   const [currency, setCurrency] = useState('IDR');
   const [locale, setLocale] = useState(DEFAULT_LOCALE);
+  const [logoUrl, setLogoUrl] = useState('');
   const [hasInvoices, setHasInvoices] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -43,6 +45,7 @@ export default function BusinessSettingsPage() {
     try {
       const detail = await apiClient<PosBusiness & { hasInvoices: boolean }>(`/api/businesses/${businessId}`);
       setCurrency(detail.currency);
+      setLogoUrl(detail.logo_url ?? '');
       setHasInvoices(detail.hasInvoices);
     } finally {
       setLoadingDetail(false);
@@ -63,10 +66,17 @@ export default function BusinessSettingsPage() {
     setError(null);
     setSaved(false);
     try {
+      const payload: Record<string, string | null> = {};
       if (!hasInvoices && currency !== activeMembership?.business.currency) {
+        payload.currency = currency;
+      }
+      if (logoUrl !== (activeMembership?.business.logo_url ?? '')) {
+        payload.logo_url = logoUrl || null;
+      }
+      if (Object.keys(payload).length > 0) {
         await apiClient<PosBusiness>(`/api/businesses/${businessId}`, {
           method: 'PATCH',
-          body: JSON.stringify({ currency }),
+          body: JSON.stringify(payload),
         });
         await refresh();
       }
@@ -111,6 +121,8 @@ export default function BusinessSettingsPage() {
       </StickyHeader>
 
       <div className="space-y-4">
+        <BusinessLogoUploader businessId={businessId} value={logoUrl} onChange={setLogoUrl} />
+
         <Select
           label="Mata Uang"
           isDisabled={hasInvoices}

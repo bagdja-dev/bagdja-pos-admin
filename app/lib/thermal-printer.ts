@@ -111,6 +111,8 @@ export interface ReceiptServiceLine {
 
 export interface ReceiptData {
   businessName: string;
+  /** URL publik logo bisnis (lihat pos_businesses.logo_url) — dicetak sebagai bitmap di atas nama bisnis kalau ada. */
+  logoUrl?: string | null;
   locationName?: string | null;
   invoiceNumber: string;
   typeLabel: string;
@@ -123,12 +125,59 @@ export interface ReceiptData {
   paymentMethod?: string | null;
 }
 
+// 384 dot @ 203dpi — basis fisik yang sama dengan LABEL_WIDTH_DOTS di bawah
+// (dideklarasikan terpisah, BUKAN alias ke LABEL_WIDTH_DOTS, karena const itu
+// baru terdefinisi belakangan di file ini — referensi maju ke const akan
+// throw "Cannot access before initialization" saat module dievaluasi).
+const RECEIPT_WIDTH_DOTS = 384;
+const LOGO_MAX_HEIGHT_DOTS = 150;
+
+/**
+ * Muat logo dari URL publik, resize proporsional supaya muat di lebar kertas
+ * (tidak pernah di-upscale — logo kecil tetap kecil, daripada pecah), lalu
+ * ubah ke command raster `GS v 0` yang sama dipakai label produk. Return
+ * `null` kalau gagal (offline, URL rusak, dsb) — SENGAJA ditelan di sini,
+ * bukan di `buildReceiptBytes`, supaya struk tetap tercetak tanpa logo
+ * daripada gagal total gara-gara satu gambar tidak bisa dimuat.
+ */
+async function buildLogoRaster(url: string): Promise<Uint8Array | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const bitmap = await createImageBitmap(blob);
+
+    const scale = Math.min(RECEIPT_WIDTH_DOTS / bitmap.width, LOGO_MAX_HEIGHT_DOTS / bitmap.height, 1);
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(bitmap, 0, 0, w, h);
+
+    return canvasToRasterCommand(canvas);
+  } catch {
+    return null;
+  }
+}
+
 /** Bangun byte ESC/POS mentah untuk struk lebar 60mm (32 karakter/baris — aman untuk mayoritas printer thermal 58-60mm Font A). */
-export function buildReceiptBytes(data: ReceiptData, width = 32): Uint8Array {
+export async function buildReceiptBytes(data: ReceiptData, width = 32): Promise<Uint8Array> {
   const b = new ReceiptBuilder();
-  b.init()
-    .alignCenter()
-    .bold(true)
+  b.init().alignCenter();
+
+  if (data.logoUrl) {
+    const logoRaster = await buildLogoRaster(data.logoUrl);
+    if (logoRaster) b.raw(logoRaster).feed(1);
+  }
+
+  b.bold(true)
     .doubleSize(true)
     .line(data.businessName)
     .doubleSize(false)

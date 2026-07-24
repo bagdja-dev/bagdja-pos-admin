@@ -10,11 +10,12 @@ import { INVOICE_TYPE_LABELS, type PosInvoice } from '../lib/types';
 interface PrintReceiptButtonProps {
   invoice: PosInvoice;
   businessName: string;
+  logoUrl?: string | null;
   locationName?: string | null;
 }
 
 /** Tombol "Cetak Struk" — build byte ESC/POS dari data faktur, kirim via Web Bluetooth. Chrome/Edge saja (lihat lib/thermal-printer.ts). */
-export function PrintReceiptButton({ invoice, businessName, locationName }: PrintReceiptButtonProps) {
+export function PrintReceiptButton({ invoice, businessName, logoUrl, locationName }: PrintReceiptButtonProps) {
   const [printing, setPrinting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,6 +25,7 @@ export function PrintReceiptButton({ invoice, businessName, locationName }: Prin
     try {
       const data: ReceiptData = {
         businessName,
+        logoUrl,
         locationName,
         invoiceNumber: invoice.invoice_number,
         typeLabel: INVOICE_TYPE_LABELS[invoice.type],
@@ -39,7 +41,7 @@ export function PrintReceiptButton({ invoice, businessName, locationName }: Prin
         serviceTotal: Number(invoice.service_total),
         grandTotal: Number(invoice.grand_total),
       };
-      await printViaBluetooth(buildReceiptBytes(data));
+      await printViaBluetooth(await buildReceiptBytes(data));
     } catch (err) {
       // Klik "Cancel" di dialog pilih device juga masuk sini (DOMException NotFoundError) — bukan error beneran.
       const message = err instanceof Error ? err.message : 'Gagal mencetak struk';
