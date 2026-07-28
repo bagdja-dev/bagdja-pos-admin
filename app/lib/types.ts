@@ -287,6 +287,24 @@ export interface PosInvoice {
   party?: PosContact | PosLocation | null;
   /** Faktur asal kalau ini faktur retur (`ref_invoice_id` tidak null) — cuma ada di detail per-faktur. */
   refInvoice?: PosInvoice | null;
+  /** Terisi kalau faktur ini anggota pair tukar tambah — kalau terisi, TIDAK bisa dibayar langsung (lihat halaman detail pair). */
+  pair_id?: string | null;
+}
+
+export type PosInvoicePairType = 'jual_tambah' | 'beli_tambah';
+
+export const PAIR_TYPE_LABELS: Record<PosInvoicePairType, string> = {
+  jual_tambah: 'Jual Tambah (dari Pelanggan)',
+  beli_tambah: 'Beli Tambah (ke Supplier)',
+};
+
+/** Pair tukar tambah — sepasang faktur `source`(di-offset-kan)+`target`(menerima offset). Lihat `tukar-tambah-plan.md`. */
+export interface PosInvoicePair {
+  id: string;
+  pair_type: PosInvoicePairType;
+  created_at: string;
+  source: PosInvoice;
+  target: PosInvoice;
 }
 
 export interface PosInvoiceAttachment {

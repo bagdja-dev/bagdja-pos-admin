@@ -271,7 +271,11 @@ export default function InvoiceDetailPage() {
   if (!businessId) return <NoBusinessState />;
   if (!invoice) return <p className="text-danger">{error ?? 'Faktur tidak ditemukan'}</p>;
 
-  const canPay = invoice.type !== 'transfer' && invoice.status === 'submitted' && invoice.payment_status !== 'paid';
+  const canPay =
+    invoice.type !== 'transfer' &&
+    invoice.status === 'submitted' &&
+    invoice.payment_status !== 'paid' &&
+    !invoice.pair_id;
   const canSettle = invoice.type === 'transfer' && invoice.flow === 'in' && invoice.status === 'submitted';
   const canReturn =
     invoice.type !== 'transfer' &&
@@ -292,6 +296,14 @@ export default function InvoiceDetailPage() {
                 Retur dari{' '}
                 <Link href={`/dashboard/invoices/${invoice.refInvoice.id}`} className="font-mono text-primary hover:underline">
                   {invoice.refInvoice.invoice_number}
+                </Link>
+              </p>
+            )}
+            {invoice.pair_id && (
+              <p className="mt-1 text-sm text-default-500">
+                Bagian dari Tukar Tambah —{' '}
+                <Link href={`/dashboard/invoice-pairs/${invoice.pair_id}`} className="text-primary hover:underline">
+                  lihat & bayar di sini
                 </Link>
               </p>
             )}
