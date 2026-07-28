@@ -1,43 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { generateCodeVerifier, generateCodeChallenge, generateState, buildAuthorizeUrl } from '../../lib/auth';
+import { generateCodeVerifier, generateCodeChallenge, buildAuthorizeUrl } from '../../lib/auth';
+import { encryptOAuthState } from '../../lib/oauth-state';
 
 function safeNextPath(next: string | null): string | null {
   if (!next || !next.startsWith('/') || next.startsWith('//')) return null;
   return next;
 }
 
+const STATE_ENCRYPTION_KEY = process.env.OAUTH_STATE_ENCRYPTION_KEY ?? '';
+
 export async function GET(request: NextRequest) {
-  const codeVerifier = generateCodeVerifier();
-  const state = generateState();
-  const codeChallenge = await generateCodeChallenge(codeVerifier);
-
-  const jar = await cookies();
-  jar.set('oauth_code_verifier', codeVerifier, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 600,
-  });
-  jar.set('oauth_state', state, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 600,
-  });
-
-  const next = safeNextPath(request.nextUrl.searchParams.get('next'));
-  if (next) {
-    jar.set('oauth_next', next, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 600,
-    });
+  if (!STATE_ENCRYPTION_KEY) {
+    console.error('OAUTH_STATE_ENCRYPTION_KEY belum di-set di environment');
+    return NextResponse.redirect(new URL('/?error=server_misconfigured', request.url));
   }
+
+  const codeVerifier = generateCodeVerifier();
+  const codeChallenge = await generateCodeChallenge(codeVerifier);
+  const next = safeNextPath(request.nextUrl.searchParams.get('next'));
+
+  // code_verifier + next path dienkripsi ke dalam `state` (bukan cookie) —
+  // supaya tidak bergantung pada cookie yang di-set sebelum redirect
+  // bertahan lintas navigasi ke IdP dan balik lagi (lihat oauth-state.ts).
+  const state = encryptOAuthState({ codeVerifier, next }, STATE_ENCRYPTION_KEY);
 
   const authorizeUrl = buildAuthorizeUrl(state, codeChallenge);
   return NextResponse.redirect(authorizeUrl);
