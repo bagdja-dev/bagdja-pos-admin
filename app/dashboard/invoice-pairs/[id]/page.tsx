@@ -34,8 +34,26 @@ import {
   PAIR_TYPE_LABELS,
   type PosInvoice,
   type PosInvoicePair,
+  type PosPaymentLedger,
   type PosPaymentMethod,
 } from '../../../lib/types';
+
+interface TaggedLedgerEntry extends PosPaymentLedger {
+  invoiceNumber: string;
+}
+
+function ledgerEntryLabel(entryType: PosPaymentLedger['entry_type']): string {
+  switch (entryType) {
+    case 'invoice_issued':
+      return 'Tagihan';
+    case 'adjustment':
+      return 'Penyesuaian (Offset)';
+    case 'charge':
+      return 'Bunga';
+    default:
+      return 'Pembayaran';
+  }
+}
 
 function InvoiceLegSection({
   title,
@@ -110,6 +128,7 @@ export default function InvoicePairDetailPage() {
   const [pair, setPair] = useState<PosInvoicePair | null>(null);
   const [sourceOutstanding, setSourceOutstanding] = useState<number | null>(null);
   const [targetOutstanding, setTargetOutstanding] = useState<number | null>(null);
+  const [ledgerEntries, setLedgerEntries] = useState<TaggedLedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,18 +148,22 @@ export default function InvoicePairDetailPage() {
       const p = await apiClient<PosInvoicePair>(`/api/businesses/${businessId}/invoice-pairs/${params.id}`);
       setPair(p);
 
-      if (p.source.status === 'submitted' || p.source.status === 'settled') {
-        const l = await apiClient<{ outstanding: number }>(`/api/businesses/${businessId}/invoices/${p.source.id}/payments`);
-        setSourceOutstanding(l.outstanding);
-      } else {
-        setSourceOutstanding(null);
-      }
-      if (p.target.status === 'submitted' || p.target.status === 'settled') {
-        const l = await apiClient<{ outstanding: number }>(`/api/businesses/${businessId}/invoices/${p.target.id}/payments`);
-        setTargetOutstanding(l.outstanding);
-      } else {
-        setTargetOutstanding(null);
-      }
+      const fetchLedger = (invoice: PosInvoice) =>
+        invoice.status === 'submitted' || invoice.status === 'settled'
+          ? apiClient<{ entries: PosPaymentLedger[]; outstanding: number }>(
+              `/api/businesses/${businessId}/invoices/${invoice.id}/payments`,
+            )
+          : Promise.resolve(null);
+
+      const [sourceLedger, targetLedger] = await Promise.all([fetchLedger(p.source), fetchLedger(p.target)]);
+      setSourceOutstanding(sourceLedger?.outstanding ?? null);
+      setTargetOutstanding(targetLedger?.outstanding ?? null);
+
+      const combined: TaggedLedgerEntry[] = [
+        ...(sourceLedger?.entries ?? []).map((e) => ({ ...e, invoiceNumber: p.source.invoice_number })),
+        ...(targetLedger?.entries ?? []).map((e) => ({ ...e, invoiceNumber: p.target.invoice_number })),
+      ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      setLedgerEntries(combined);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Gagal memuat pair tukar tambah');
     } finally {
@@ -199,6 +222,10 @@ export default function InvoicePairDetailPage() {
   const canPay = !bothDraft && outstandingTotal > 0.01;
   const maxPayable = Math.max(sourceOutstanding ?? 0, targetOutstanding ?? 0);
 
+  const totalSource = Number(pair.source.grand_total);
+  const totalTarget = Number(pair.target.grand_total);
+  const selisih = totalTarget - totalSource;
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <StickyHeader>
@@ -248,6 +275,59 @@ export default function InvoicePairDetailPage() {
         <InvoiceLegSection title="Faktur Sumber (di-offset-kan)" invoice={pair.source} outstanding={sourceOutstanding} />
         <InvoiceLegSection title="Faktur Target (menerima offset)" invoice={pair.target} outstanding={targetOutstanding} />
       </div>
+
+      <div className="flex justify-end">
+        <div className="w-full space-y-1 text-sm sm:w-72">
+          <div className="flex justify-between">
+            <span className="text-default-500">Total Faktur Sumber</span>
+            <span>{formatCurrency(totalSource)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-default-500">Total Faktur Target</span>
+            <span>{formatCurrency(totalTarget)}</span>
+          </div>
+          <div className="flex justify-between font-semibold">
+            <span>{selisih === 0 ? 'Selisih' : selisih > 0 ? 'Pihak Terkait Menambah' : 'Anda Mengembalikan'}</span>
+            <span className={selisih < 0 ? 'text-danger' : ''}>{formatCurrency(Math.abs(selisih))}</span>
+          </div>
+          {!bothDraft && (
+            <div className="flex justify-between text-primary">
+              <span>Sisa Pembayaran</span>
+              <span>{formatCurrency(maxPayable)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {ledgerEntries.length > 0 && (
+        <div>
+          <h2 className="mb-2 text-lg font-semibold text-foreground">Riwayat Pembayaran</h2>
+          <div className="overflow-x-auto">
+            <Table aria-label="Riwayat pembayaran tukar tambah">
+              <TableHeader>
+                <TableColumn>FAKTUR</TableColumn>
+                <TableColumn>TIPE</TableColumn>
+                <TableColumn>METODE</TableColumn>
+                <TableColumn>DEBIT</TableColumn>
+                <TableColumn>KREDIT</TableColumn>
+                <TableColumn>WAKTU</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {ledgerEntries.map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell className="font-mono">{e.invoiceNumber}</TableCell>
+                    <TableCell>{ledgerEntryLabel(e.entry_type)}</TableCell>
+                    <TableCell>{e.payment_method ?? '—'}</TableCell>
+                    <TableCell>{formatCurrency(e.debit)}</TableCell>
+                    <TableCell>{formatCurrency(e.kredit)}</TableCell>
+                    <TableCell>{new Date(e.created_at).toLocaleString('id-ID')}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
 
       <AppModal
         isOpen={paymentModalOpen}
