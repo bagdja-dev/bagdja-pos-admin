@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { setSession } from '../../lib/session';
 import { syncUserToBackend } from '../../lib/backend-api';
-import { decryptOAuthState } from '../../lib/oauth-state';
+import { consumeOAuthState } from '../../lib/oauth-state-store';
 
 const AUTH_URL = process.env.NEXT_PUBLIC_AUTH_URL ?? 'http://localhost:4001';
 const CLIENT_ID = process.env.NEXT_PUBLIC_CLIENT_ID ?? 'bagdja-pos-admin';
 const CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET ?? '';
 const REDIRECT_URI = process.env.NEXT_PUBLIC_REDIRECT_URI ?? 'http://localhost:5007/auth/callback';
-const STATE_ENCRYPTION_KEY = process.env.OAUTH_STATE_ENCRYPTION_KEY ?? '';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -23,15 +22,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/?error=missing_params', request.url));
   }
 
-  if (!STATE_ENCRYPTION_KEY) {
-    console.error('OAUTH_STATE_ENCRYPTION_KEY belum di-set di environment');
-    return NextResponse.redirect(new URL('/?error=server_misconfigured', request.url));
-  }
-
-  // code_verifier + next path dibaca dari `state` yang dienkripsi — bukan
-  // dari cookie, supaya tidak terpengaruh Safari yang tidak konsisten
-  // menyimpan Set-Cookie yang menempel di response redirect (lihat login/route.ts).
-  const decoded = decryptOAuthState(state, STATE_ENCRYPTION_KEY);
+  // code_verifier + next path dibaca dari Upstash Redis (sekali pakai, lalu
+  // dihapus) — bukan dari cookie, supaya tidak terpengaruh Safari yang tidak
+  // konsisten menyimpan Set-Cookie yang menempel di response redirect (lihat
+  // login/route.ts).
+  const decoded = await consumeOAuthState(state);
 
   if (!decoded) {
     return NextResponse.redirect(new URL('/?error=state_mismatch', request.url));
