@@ -1,9 +1,21 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button, Chip, Input, Select, SelectItem } from '@heroui/react';
+import {
+  Button,
+  Chip,
+  Input,
+  Select,
+  SelectItem,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+} from '@heroui/react';
 
 import { AppModal } from '../../../components/app-modal';
 import { CurrencyInput } from '../../../components/currency-input';
@@ -57,12 +69,36 @@ function InvoiceSummaryCard({
           <p className="text-danger">Sisa: <span className="font-semibold">{formatCurrency(outstanding)}</span></p>
         )}
       </div>
+
+      {(invoice.items?.length ?? 0) > 0 && (
+        <div className="mt-3 overflow-x-auto">
+          <Table aria-label={`Barang ${title}`} removeWrapper className="min-w-full">
+            <TableHeader>
+              <TableColumn>PRODUK</TableColumn>
+              <TableColumn>QTY</TableColumn>
+              <TableColumn>HARGA</TableColumn>
+              <TableColumn>SUBTOTAL</TableColumn>
+            </TableHeader>
+            <TableBody>
+              {(invoice.items ?? []).map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>{item.product?.name ?? item.product_id}</TableCell>
+                  <TableCell>{item.quantity}</TableCell>
+                  <TableCell>{formatCurrency(item.adjusted_price)}</TableCell>
+                  <TableCell>{formatCurrency(item.subtotal)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function InvoicePairDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const { businessId, activeMembership, loading: businessLoading } = useBusinessContext();
   function formatCurrency(value: number | string) {
     return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
@@ -180,6 +216,11 @@ export default function InvoicePairDetailPage() {
       </div>
 
       <div className="flex gap-2">
+        {bothDraft && (
+          <Button variant="flat" onPress={() => router.push(`/dashboard/invoice-pairs/${pair.id}/edit`)}>
+            Edit
+          </Button>
+        )}
         {bothDraft && (
           <Button color="primary" isLoading={busy} onPress={handleSubmitPair}>
             Submit Tukar Tambah

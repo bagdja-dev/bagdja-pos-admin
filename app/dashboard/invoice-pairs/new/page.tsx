@@ -60,7 +60,7 @@ export default function NewInvoicePairPage() {
   const [targetItems, setTargetItems] = useState<ItemRow[]>([{ ...EMPTY_ITEM_ROW }]);
   const [note, setNote] = useState('');
 
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState<'draft' | 'submit' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [contactModalOpen, setContactModalOpen] = useState(false);
@@ -112,7 +112,7 @@ export default function NewInvoicePairPage() {
     };
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(alsoSubmit: boolean) {
     if (!businessId || !locationId || !partyId) {
       setError('Lokasi dan pihak terkait wajib diisi');
       return;
@@ -124,7 +124,7 @@ export default function NewInvoicePairPage() {
       return;
     }
 
-    setSaving(true);
+    setSaving(alsoSubmit ? 'submit' : 'draft');
     setError(null);
     try {
       const pair = await apiClient<PosInvoicePair>(`/api/businesses/${businessId}/invoice-pairs`, {
@@ -139,21 +139,23 @@ export default function NewInvoicePairPage() {
         }),
       });
 
-      try {
-        await apiClient(`/api/businesses/${businessId}/invoice-pairs/${pair.id}/submit`, { method: 'POST' });
-      } catch (err) {
-        alert(
-          `Pair tersimpan sebagai draft, tapi gagal disubmit otomatis: ${
-            err instanceof ApiError ? err.message : 'terjadi kesalahan'
-          }. Submit manual dari halaman detail.`,
-        );
+      if (alsoSubmit) {
+        try {
+          await apiClient(`/api/businesses/${businessId}/invoice-pairs/${pair.id}/submit`, { method: 'POST' });
+        } catch (err) {
+          alert(
+            `Pair tersimpan sebagai draft, tapi gagal disubmit otomatis: ${
+              err instanceof ApiError ? err.message : 'terjadi kesalahan'
+            }. Submit manual dari halaman detail.`,
+          );
+        }
       }
 
       router.push(`/dashboard/invoice-pairs/${pair.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Gagal membuat tukar tambah');
     } finally {
-      setSaving(false);
+      setSaving(null);
     }
   }
 
@@ -249,14 +251,26 @@ export default function NewInvoicePairPage() {
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <Button
-        color="primary"
-        className="h-auto min-h-11 w-full whitespace-normal py-2.5"
-        isLoading={saving}
-        onPress={handleSubmit}
-      >
-        Buat & Submit Tukar Tambah
-      </Button>
+      <div className="flex flex-col gap-3 md:flex-row">
+        <Button
+          variant="flat"
+          className="h-auto min-h-11 flex-1 whitespace-normal py-2.5"
+          isLoading={saving === 'draft'}
+          isDisabled={saving !== null}
+          onPress={() => handleSubmit(false)}
+        >
+          Simpan sebagai Draft
+        </Button>
+        <Button
+          color="primary"
+          className="h-auto min-h-11 flex-1 whitespace-normal py-2.5"
+          isLoading={saving === 'submit'}
+          isDisabled={saving !== null}
+          onPress={() => handleSubmit(true)}
+        >
+          Buat & Submit Tukar Tambah
+        </Button>
+      </div>
 
       {businessId && (
         <QuickAddContactModal
