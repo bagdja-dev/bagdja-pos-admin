@@ -37,7 +37,7 @@ import {
   type PosPaymentMethod,
 } from '../../../lib/types';
 
-function InvoiceSummaryCard({
+function InvoiceLegSection({
   title,
   invoice,
   outstanding,
@@ -52,18 +52,21 @@ function InvoiceSummaryCard({
   }
 
   return (
-    <div className="rounded-xl border border-default-200 p-4">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">{title}</p>
-      <Link href={`/dashboard/invoices/${invoice.id}`} className="font-mono text-sm text-primary hover:underline">
-        {invoice.invoice_number}
-      </Link>
-      <div className="mt-2 flex flex-wrap gap-1">
-        <Chip size="sm" variant="flat">{INVOICE_TYPE_LABELS[invoice.type]}</Chip>
-        <Chip size="sm" variant="flat">{INVOICE_STATUS_LABELS[invoice.status]}</Chip>
-        <Chip size="sm" variant="flat">{PAYMENT_STATUS_LABELS[invoice.payment_status]}</Chip>
+    <div>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-default-500">{title}</p>
+          <Link href={`/dashboard/invoices/${invoice.id}`} className="font-mono text-sm text-primary hover:underline">
+            {invoice.invoice_number}
+          </Link>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          <Chip size="sm" variant="flat">{INVOICE_TYPE_LABELS[invoice.type]}</Chip>
+          <Chip size="sm" variant="flat">{INVOICE_STATUS_LABELS[invoice.status]}</Chip>
+          <Chip size="sm" variant="flat">{PAYMENT_STATUS_LABELS[invoice.payment_status]}</Chip>
+        </div>
       </div>
-      <div className="mt-3 space-y-1 text-sm">
-        <p className="text-default-500">Pihak: <span className="text-foreground">{invoice.party?.name ?? '—'}</span></p>
+      <div className="mb-2 flex flex-wrap gap-x-4 text-sm">
         <p className="text-default-500">Total: <span className="font-semibold text-foreground">{formatCurrency(invoice.grand_total)}</span></p>
         {outstanding != null && outstanding > 0 && (
           <p className="text-danger">Sisa: <span className="font-semibold">{formatCurrency(outstanding)}</span></p>
@@ -71,8 +74,8 @@ function InvoiceSummaryCard({
       </div>
 
       {(invoice.items?.length ?? 0) > 0 && (
-        <div className="mt-3 overflow-x-auto">
-          <Table aria-label={`Barang ${title}`} removeWrapper className="min-w-full">
+        <div className="overflow-x-auto">
+          <Table aria-label={`Barang ${title}`}>
             <TableHeader>
               <TableColumn>PRODUK</TableColumn>
               <TableColumn>QTY</TableColumn>
@@ -197,7 +200,7 @@ export default function InvoicePairDetailPage() {
   const maxPayable = Math.max(sourceOutstanding ?? 0, targetOutstanding ?? 0);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <StickyHeader>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -210,12 +213,12 @@ export default function InvoicePairDetailPage() {
         </div>
       </StickyHeader>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <InvoiceSummaryCard title="Faktur Sumber (di-offset-kan)" invoice={pair.source} outstanding={sourceOutstanding} />
-        <InvoiceSummaryCard title="Faktur Target (menerima offset)" invoice={pair.target} outstanding={targetOutstanding} />
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <ReadOnlyField label="Lokasi" value={pair.source.location?.name ?? ''} />
+        <ReadOnlyField label="Pihak Terkait" value={pair.source.party?.name ?? ''} />
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1 [&>*]:shrink-0">
         {bothDraft && (
           <Button variant="flat" onPress={() => router.push(`/dashboard/invoice-pairs/${pair.id}/edit`)}>
             Edit
@@ -240,6 +243,11 @@ export default function InvoicePairDetailPage() {
       </div>
 
       {error && <p className="text-sm text-danger">{error}</p>}
+
+      <div className="space-y-6">
+        <InvoiceLegSection title="Faktur Sumber (di-offset-kan)" invoice={pair.source} outstanding={sourceOutstanding} />
+        <InvoiceLegSection title="Faktur Target (menerima offset)" invoice={pair.target} outstanding={targetOutstanding} />
+      </div>
 
       <AppModal
         isOpen={paymentModalOpen}
