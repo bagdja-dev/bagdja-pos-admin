@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { Button } from '@heroui/react';
 import { Printer } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { buildReceiptBytes, printViaBluetooth, type ReceiptData } from '../lib/thermal-printer';
+import { resolveServiceLabel } from '../lib/service-marker';
 import { INVOICE_TYPE_LABELS, type PosInvoice } from '../lib/types';
 
 interface PrintReceiptButtonProps {
@@ -18,6 +20,7 @@ interface PrintReceiptButtonProps {
 export function PrintReceiptButton({ invoice, businessName, logoUrl, locationName }: PrintReceiptButtonProps) {
   const [printing, setPrinting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const tServiceMarkers = useTranslations('serviceMarkers');
 
   async function handlePrint() {
     setPrinting(true);
@@ -36,7 +39,10 @@ export function PrintReceiptButton({ invoice, businessName, logoUrl, locationNam
           price: Number(it.adjusted_price),
           subtotal: Number(it.subtotal),
         })),
-        services: (invoice.services ?? []).map((s) => ({ label: s.label, amount: Number(s.amount) })),
+        services: (invoice.services ?? []).map((s) => ({
+          label: resolveServiceLabel(s.label, tServiceMarkers),
+          amount: Number(s.amount),
+        })),
         subtotal: Number(invoice.subtotal),
         serviceTotal: Number(invoice.service_total),
         grandTotal: Number(invoice.grand_total),

@@ -32,7 +32,9 @@
     "businessStatus": "Status Bisnis",
     "active": "Aktif",
     "inactive": "Nonaktif",
-    "hint": "Gunakan menu di sidebar untuk kelola Lokasi, Produk, Jasa, Kontak, Faktur, dan Tim."
+    "hint": "Gunakan menu di sidebar untuk kelola Lokasi, Produk, Jasa, Kontak, Faktur, dan Tim.",
+    "debtNoteTitle": "Faktur Utang",
+    "debtNoteDesc": "Catat penjualan yang belum dibayar"
   },
   "inventory": {
     "title": "Dashboard Stok",
@@ -51,5 +53,8 @@
     "noRacks": "Belum dialokasikan ke rak manapun.",
     "emptyHint": "Cari produk di atas untuk lihat sebaran stoknya.",
     "loadError": "Gagal memuat sebaran stok"
+  },
+  "serviceMarkers": {
+    "SELL": "Penjualan"
   }
 }

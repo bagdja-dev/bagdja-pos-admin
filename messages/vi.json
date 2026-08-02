@@ -32,7 +32,9 @@
     "businessStatus": "Trạng Thái Doanh Nghiệp",
     "active": "Hoạt Động",
     "inactive": "Ngừng Hoạt Động",
-    "hint": "Dùng menu ở thanh bên để quản lý Địa Điểm, Sản Phẩm, Dịch Vụ, Liên Hệ, Hóa Đơn, và Nhân Viên."
+    "hint": "Dùng menu ở thanh bên để quản lý Địa Điểm, Sản Phẩm, Dịch Vụ, Liên Hệ, Hóa Đơn, và Nhân Viên.",
+    "debtNoteTitle": "Hóa Đơn Nợ",
+    "debtNoteDesc": "Ghi lại giao dịch bán chưa thanh toán"
   },
   "inventory": {
     "title": "Tổng Quan Tồn Kho",
@@ -51,5 +53,8 @@
     "noRacks": "Chưa được phân bổ vào kệ hàng nào.",
     "emptyHint": "Tìm sản phẩm ở trên để xem phân bổ tồn kho.",
     "loadError": "Không thể tải phân bổ tồn kho"
+  },
+  "serviceMarkers": {
+    "SELL": "Bán Hàng"
   }
 }

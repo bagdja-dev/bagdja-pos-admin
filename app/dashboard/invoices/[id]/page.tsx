@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import {
   Button,
   Chip,
@@ -30,6 +31,7 @@ import { ReadOnlyField } from '../../../components/read-only-field';
 import { ViewModeToggle } from '../../../components/view-mode-toggle';
 import { apiClient, ApiError } from '../../../lib/api-client';
 import { formatCurrency as formatMoney } from '../../../lib/currency';
+import { resolveServiceLabel } from '../../../lib/service-marker';
 import { useBusinessContext } from '../../../context/business-context';
 import { useViewMode } from '../../../hooks/use-view-mode';
 import {
@@ -58,6 +60,7 @@ export default function InvoiceDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { businessId, activeMembership, role, loading: businessLoading } = useBusinessContext();
+  const tServiceMarkers = useTranslations('serviceMarkers');
   const canSeeProfit = hasMinRole(role ?? '', 'manager');
   function formatCurrency(value: number | string) {
     return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
@@ -479,7 +482,7 @@ export default function InvoiceDetailPage() {
                   key={s.id}
                   className="flex items-center justify-between rounded-2xl border border-default-200 bg-default-50 px-4 py-3"
                 >
-                  <span className="font-medium text-foreground">{s.label}</span>
+                  <span className="font-medium text-foreground">{resolveServiceLabel(s.label, tServiceMarkers)}</span>
                   <span className="font-semibold">{formatCurrency(s.amount)}</span>
                 </div>
               ))}
@@ -493,7 +496,7 @@ export default function InvoiceDetailPage() {
               <TableBody>
                 {(invoice.services ?? []).map((s) => (
                   <TableRow key={s.id}>
-                    <TableCell>{s.label}</TableCell>
+                    <TableCell>{resolveServiceLabel(s.label, tServiceMarkers)}</TableCell>
                     <TableCell>{formatCurrency(s.amount)}</TableCell>
                   </TableRow>
                 ))}

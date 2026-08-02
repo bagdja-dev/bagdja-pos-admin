@@ -32,7 +32,9 @@
     "businessStatus": "Business Status",
     "active": "Active",
     "inactive": "Inactive",
-    "hint": "Use the sidebar menu to manage Locations, Products, Services, Contacts, Invoices, and Team."
+    "hint": "Use the sidebar menu to manage Locations, Products, Services, Contacts, Invoices, and Team.",
+    "debtNoteTitle": "Debt Invoice",
+    "debtNoteDesc": "Record an unpaid sale"
   },
   "inventory": {
     "title": "Stock Dashboard",
@@ -51,5 +53,8 @@
     "noRacks": "Not yet allocated to any rack.",
     "emptyHint": "Search for a product above to see its stock distribution.",
     "loadError": "Failed to load stock distribution"
+  },
+  "serviceMarkers": {
+    "SELL": "Sale"
   }
 }

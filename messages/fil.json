@@ -32,7 +32,9 @@
     "businessStatus": "Katayuan ng Negosyo",
     "active": "Aktibo",
     "inactive": "Hindi Aktibo",
-    "hint": "Gamitin ang menu sa sidebar para pamahalaan ang Lokasyon, Produkto, Serbisyo, Kontak, Invoice, at Kawani."
+    "hint": "Gamitin ang menu sa sidebar para pamahalaan ang Lokasyon, Produkto, Serbisyo, Kontak, Invoice, at Kawani.",
+    "debtNoteTitle": "Invoice sa Utang",
+    "debtNoteDesc": "Itala ang benta na hindi pa bayad"
   },
   "inventory": {
     "title": "Dashboard ng Imbentaryo",
@@ -51,5 +53,8 @@
     "noRacks": "Hindi pa naitalaga sa anumang estante.",
     "emptyHint": "Maghanap ng produkto sa itaas para makita ang distribusyon ng stock nito.",
     "loadError": "Hindi na-load ang distribusyon ng stock"
+  },
+  "serviceMarkers": {
+    "SELL": "Benta"
   }
 }

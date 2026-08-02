@@ -32,7 +32,9 @@
     "businessStatus": "Status Perniagaan",
     "active": "Aktif",
     "inactive": "Tidak Aktif",
-    "hint": "Guna menu di bar sisi untuk urus Lokasi, Produk, Perkhidmatan, Kenalan, Invois, dan Pasukan."
+    "hint": "Guna menu di bar sisi untuk urus Lokasi, Produk, Perkhidmatan, Kenalan, Invois, dan Pasukan.",
+    "debtNoteTitle": "Invois Hutang",
+    "debtNoteDesc": "Rekod jualan yang belum dibayar"
   },
   "inventory": {
     "title": "Dashboard Stok",
@@ -51,5 +53,8 @@
     "noRacks": "Belum diperuntukkan ke rak mana-mana.",
     "emptyHint": "Cari produk di atas untuk lihat taburan stoknya.",
     "loadError": "Gagal memuatkan taburan stok"
+  },
+  "serviceMarkers": {
+    "SELL": "Jualan"
   }
 }
