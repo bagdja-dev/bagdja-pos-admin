@@ -51,18 +51,18 @@ export default function DashboardPage() {
         <p className="text-sm text-default-500">{t('subtitle')}</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <Card shadow="sm">
-          <CardHeader className="pb-0 text-sm font-medium text-default-500">{t('yourRole')}</CardHeader>
-          <CardBody className="text-lg font-semibold">{tRoles(role)}</CardBody>
+          <CardHeader className="pb-0 text-[11px] font-medium text-default-500 sm:text-sm">{t('yourRole')}</CardHeader>
+          <CardBody className="text-sm font-semibold sm:text-lg">{tRoles(role)}</CardBody>
         </Card>
         <Card shadow="sm">
-          <CardHeader className="pb-0 text-sm font-medium text-default-500">{t('lockedLocation')}</CardHeader>
-          <CardBody className="text-lg font-semibold">{location?.name ?? t('allLocations')}</CardBody>
+          <CardHeader className="pb-0 text-[11px] font-medium text-default-500 sm:text-sm">{t('lockedLocation')}</CardHeader>
+          <CardBody className="text-sm font-semibold sm:text-lg">{location?.name ?? t('allLocations')}</CardBody>
         </Card>
         <Card shadow="sm">
-          <CardHeader className="pb-0 text-sm font-medium text-default-500">{t('businessStatus')}</CardHeader>
-          <CardBody className="text-lg font-semibold">{business.is_active ? t('active') : t('inactive')}</CardBody>
+          <CardHeader className="pb-0 text-[11px] font-medium text-default-500 sm:text-sm">{t('businessStatus')}</CardHeader>
+          <CardBody className="text-sm font-semibold sm:text-lg">{business.is_active ? t('active') : t('inactive')}</CardBody>
         </Card>
       </div>
 

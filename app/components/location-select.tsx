@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Plus } from 'lucide-react';
 
 import { AppModal } from './app-modal';
 import { apiClient } from '../lib/api-client';
 import { LOCATION_TYPE_LABELS, type GridResult, type PosLocation } from '../lib/types';
+
+const CREATE_NEW_KEY = '__create_new__';
 
 interface LocationOption {
   id: string;
@@ -24,6 +26,12 @@ interface LocationSelectProps {
   onSelect: (id: string, label: string) => void;
   /** Kecualikan satu lokasi dari daftar (mis. lokasi asal saat memilih lokasi tujuan mutasi). */
   excludeId?: string;
+  /** Kalau diisi, muncul opsi "+ Tambah ..." di bawah hasil saat teks yang diketik tidak persis cocok dengan lokasi manapun — sama seperti pola `AsyncSearchSelect`. */
+  onCreateNew?: (query: string) => void;
+  /** Label opsi "+ Tambah ..." — default `Tambah "{query}"`. */
+  createNewLabel?: (query: string) => string;
+  /** Ubah nilainya (mis. counter increment) untuk memaksa daftar lokasi di-fetch ulang — dipakai setelah lokasi baru dibuat lewat `onCreateNew` supaya langsung muncul di daftar. */
+  refreshToken?: number;
 }
 
 /**
@@ -43,6 +51,9 @@ export function LocationSelect({
   selectedId,
   onSelect,
   excludeId,
+  onCreateNew,
+  createNewLabel,
+  refreshToken,
 }: LocationSelectProps) {
   const [locations, setLocations] = useState<PosLocation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +80,7 @@ export function LocationSelect({
     return () => {
       cancelled = true;
     };
-  }, [businessId]);
+  }, [businessId, refreshToken]);
 
   const options: LocationOption[] = locations
     .filter((l) => l.id !== excludeId)
@@ -78,6 +89,13 @@ export function LocationSelect({
   const filtered = filterText.trim()
     ? options.filter((o) => o.label.toLowerCase().includes(filterText.trim().toLowerCase()))
     : options;
+
+  const trimmedInput = filterText.trim();
+  const hasExactMatch = filtered.some((o) => o.label.toLowerCase() === trimmedInput.toLowerCase());
+  const showCreateOption = Boolean(onCreateNew) && trimmedInput.length > 0 && !hasExactMatch;
+  const displayOptions: LocationOption[] = showCreateOption
+    ? [...filtered, { id: CREATE_NEW_KEY, label: createNewLabel ? createNewLabel(trimmedInput) : `Tambah "${trimmedInput}"` }]
+    : filtered;
 
   const selected = options.find((o) => o.id === selectedId);
 
@@ -94,6 +112,11 @@ export function LocationSelect({
   }
 
   function selectOption(opt: LocationOption) {
+    if (opt.id === CREATE_NEW_KEY) {
+      onCreateNew?.(trimmedInput);
+      closeMenu();
+      return;
+    }
     onSelect(opt.id, opt.label);
     closeMenu();
   }
@@ -101,13 +124,13 @@ export function LocationSelect({
   function handleSearchKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setHighlighted((h) => Math.min(h + 1, filtered.length - 1));
+      setHighlighted((h) => Math.min(h + 1, displayOptions.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setHighlighted((h) => Math.max(h - 1, 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const opt = filtered[highlighted];
+      const opt = displayOptions[highlighted];
       if (opt) selectOption(opt);
     }
   }
@@ -149,22 +172,25 @@ export function LocationSelect({
             />
           </div>
           <div className="flex-1 overflow-y-auto py-1 text-sm" role="listbox">
-            {filtered.length === 0 ? (
+            {displayOptions.length === 0 ? (
               <div className="px-3 py-4 text-center text-default-400">Tidak ada hasil</div>
             ) : (
-              filtered.map((opt, idx) => (
+              displayOptions.map((opt, idx) => (
                 <div
                   key={opt.id}
                   role="option"
                   aria-selected={opt.id === selectedId}
                   onMouseEnter={() => setHighlighted(idx)}
                   onClick={() => selectOption(opt)}
-                  className={`flex cursor-pointer flex-col px-4 py-3 active:bg-default-100 ${idx === highlighted ? 'bg-default-100' : ''} ${
-                    opt.id === selectedId ? 'font-medium text-primary' : ''
+                  className={`flex cursor-pointer items-center gap-1.5 px-4 py-3 active:bg-default-100 ${idx === highlighted ? 'bg-default-100' : ''} ${
+                    opt.id === CREATE_NEW_KEY ? 'font-medium text-primary' : opt.id === selectedId ? 'font-medium text-primary' : ''
                   }`}
                 >
-                  <span>{opt.label}</span>
-                  {opt.description && <span className="text-xs text-default-400">{opt.description}</span>}
+                  {opt.id === CREATE_NEW_KEY && <Plus className="h-3.5 w-3.5 shrink-0" />}
+                  <div className="flex flex-col">
+                    <span>{opt.label}</span>
+                    {opt.description && <span className="text-xs text-default-400">{opt.description}</span>}
+                  </div>
                 </div>
               ))
             )}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button, Textarea } from '@heroui/react';
 
 import { AsyncSearchSelect, type PagedFetchResult } from '../../../../components/async-search-select';
@@ -12,6 +13,7 @@ import { StickyHeader } from '../../../../components/sticky-header';
 import { LoadingSpinner } from '../../../../components/loading-spinner';
 import { NoBusinessState } from '../../../../components/no-business-state';
 import { QuickAddContactModal } from '../../../../components/quick-add-contact-modal';
+import { QuickAddLocationModal } from '../../../../components/quick-add-location-modal';
 import { apiClient, ApiError } from '../../../../lib/api-client';
 import { formatCurrency as formatMoney } from '../../../../lib/currency';
 import { useBusinessContext } from '../../../../context/business-context';
@@ -39,6 +41,9 @@ export default function NewDebtNotePage() {
 
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [contactModalQuery, setContactModalQuery] = useState('');
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [locationModalQuery, setLocationModalQuery] = useState('');
+  const [locationRefreshToken, setLocationRefreshToken] = useState(0);
   const hasAutoSelectedLocationRef = useRef(false);
 
   useEffect(() => {
@@ -147,7 +152,12 @@ export default function NewDebtNotePage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <StickyHeader>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-          <h1 className="text-lg font-bold text-foreground sm:text-2xl">Catat Faktur Utang</h1>
+          <div>
+            <h1 className="text-lg font-bold text-foreground sm:text-2xl">Catat Faktur Utang</h1>
+            <Link href="/dashboard/ledger" className="text-xs font-medium text-primary hover:underline">
+              Lihat Daftar Piutang/Hutang &rarr;
+            </Link>
+          </div>
           <div className="rounded-xl border border-default-200 bg-default-50 px-3 py-1.5 text-right sm:rounded-2xl sm:px-5 sm:py-2.5">
             <p className="text-[9px] font-bold uppercase tracking-wide text-default-500 sm:text-[10px] sm:tracking-wider">
               Total Faktur
@@ -158,7 +168,19 @@ export default function NewDebtNotePage() {
       </StickyHeader>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <LocationSelect label="Lokasi" businessId={businessId} selectedId={locationId} onSelect={(id) => setLocationId(id)} isRequired />
+        <LocationSelect
+          label="Lokasi"
+          businessId={businessId}
+          selectedId={locationId}
+          onSelect={(id) => setLocationId(id)}
+          onCreateNew={(query) => {
+            setLocationModalQuery(query);
+            setLocationModalOpen(true);
+          }}
+          createNewLabel={(q) => `Tambah "${q}" sebagai lokasi baru`}
+          refreshToken={locationRefreshToken}
+          isRequired
+        />
 
         <AsyncSearchSelect
           label="Pelanggan"
@@ -227,6 +249,19 @@ export default function NewDebtNotePage() {
           onCreated={(contact) => {
             setPartyId(contact.id);
             setPartyLabel(contact.name);
+          }}
+        />
+      )}
+
+      {businessId && (
+        <QuickAddLocationModal
+          isOpen={locationModalOpen}
+          onClose={() => setLocationModalOpen(false)}
+          businessId={businessId}
+          initialName={locationModalQuery}
+          onCreated={(location) => {
+            setLocationId(location.id);
+            setLocationRefreshToken((n) => n + 1);
           }}
         />
       )}
