@@ -33,6 +33,7 @@
     "active": "Active",
     "inactive": "Inactive",
     "hint": "Use the sidebar menu to manage Locations, Products, Services, Contacts, Invoices, and Team.",
+    "shortcutsTitle": "Shortcuts",
     "debtNoteTitle": "Debt Invoice",
     "debtNoteDesc": "Record an unpaid sale"
   },

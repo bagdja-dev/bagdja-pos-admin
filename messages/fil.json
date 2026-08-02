@@ -33,6 +33,7 @@
     "active": "Aktibo",
     "inactive": "Hindi Aktibo",
     "hint": "Gamitin ang menu sa sidebar para pamahalaan ang Lokasyon, Produkto, Serbisyo, Kontak, Invoice, at Kawani.",
+    "shortcutsTitle": "Mga Shortcut",
     "debtNoteTitle": "Invoice sa Utang",
     "debtNoteDesc": "Itala ang benta na hindi pa bayad"
   },

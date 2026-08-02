@@ -33,6 +33,7 @@
     "active": "Aktif",
     "inactive": "Tidak Aktif",
     "hint": "Guna menu di bar sisi untuk urus Lokasi, Produk, Perkhidmatan, Kenalan, Invois, dan Pasukan.",
+    "shortcutsTitle": "Pintasan",
     "debtNoteTitle": "Invois Hutang",
     "debtNoteDesc": "Rekod jualan yang belum dibayar"
   },

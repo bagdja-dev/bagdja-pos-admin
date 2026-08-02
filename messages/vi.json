@@ -33,6 +33,7 @@
     "active": "Hoạt Động",
     "inactive": "Ngừng Hoạt Động",
     "hint": "Dùng menu ở thanh bên để quản lý Địa Điểm, Sản Phẩm, Dịch Vụ, Liên Hệ, Hóa Đơn, và Nhân Viên.",
+    "shortcutsTitle": "Lối Tắt",
     "debtNoteTitle": "Hóa Đơn Nợ",
     "debtNoteDesc": "Ghi lại giao dịch bán chưa thanh toán"
   },
