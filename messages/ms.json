@@ -15,6 +15,8 @@
     "omzet": "Perolehan",
     "piutangHutang": "Belum Terima/Bayar",
     "kas": "Tunai",
+    "groupAkun": "Akaun",
+    "subscription": "Subscription",
     "groupLainnya": "Lain-lain",
     "pengaturan": "Tetapan"
   },
