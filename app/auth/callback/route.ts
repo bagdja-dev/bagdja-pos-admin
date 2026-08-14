@@ -7,6 +7,53 @@ const AUTH_URL = process.env.NEXT_PUBLIC_AUTH_URL ?? 'http://localhost:4001';
 const CLIENT_ID = process.env.NEXT_PUBLIC_CLIENT_ID ?? 'bagdja-pos-admin';
 const CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET ?? '';
 const REDIRECT_URI = process.env.NEXT_PUBLIC_REDIRECT_URI ?? 'http://localhost:5007/auth/callback';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5008';
+const AUTO_SUBSCRIBE_ENABLED = process.env.AUTO_SUBSCRIBE_FREE_ENABLED !== 'false';
+
+/**
+ * Auto-subscribe user to free plan jika belum punya subscription.
+ * Non-blocking pada login flow — jika gagal, user tetap bisa login.
+ */
+async function attemptAutoSubscribeFree(accessToken: string): Promise<void> {
+  try {
+    const res = await fetch(`${API_URL}/api/subscriptions/auto-subscribe-free`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      console.warn(
+        '[Auto-Subscribe] Non-blocking attempt failed (status: ' +
+          res.status +
+          '). Login continues anyway.',
+      );
+      console.warn('[Auto-Subscribe] Error:', errorBody);
+      return;
+    }
+
+    const result = (await res.json()) as {
+      autoSubscribed: boolean;
+      reason?: string;
+      subscription?: any;
+    };
+
+    if (result.autoSubscribed) {
+      console.log('[Auto-Subscribe] Success: User auto-subscribed to free plan');
+    } else {
+      console.log('[Auto-Subscribe] Skipped:', result.reason || 'unknown reason');
+    }
+  } catch (err) {
+    console.error(
+      '[Auto-Subscribe] Network/parse error (non-blocking):',
+      err instanceof Error ? err.message : String(err),
+    );
+    // Continue login anyway — auto-subscribe is non-blocking
+  }
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -67,6 +114,13 @@ export async function GET(request: NextRequest) {
 
     // Sync user ke bagdja-pos-api DB (upsert pos_users via ClientAppGuard + JwtAuthGuard)
     await syncUserToBackend(accessToken);
+
+    // Auto-subscribe to free plan jika feature enabled (non-blocking — login continues even if fails)
+    if (AUTO_SUBSCRIBE_ENABLED) {
+      await attemptAutoSubscribeFree(accessToken);
+    } else {
+      console.log('[Auto-Subscribe] Feature is disabled (AUTO_SUBSCRIBE_FREE_ENABLED=false)');
+    }
 
     const nextPath = decoded.next;
 

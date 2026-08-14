@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { Card, CardBody, CardHeader } from '@heroui/react';
+import { useEffect, useState } from 'react';
+import { Button, Card, CardBody, CardHeader } from '@heroui/react';
 import { useTranslations } from 'next-intl';
 
 import { LoadingSpinner } from '../components/loading-spinner';
 import { NoBusinessState } from '../components/no-business-state';
 import { useBusinessContext } from '../context/business-context';
+import { apiClient } from '../lib/api-client';
 
 interface ShortcutItem {
   titleKey: string;
@@ -39,6 +41,52 @@ export default function DashboardPage() {
   const t = useTranslations('dashboard');
   const tRoles = useTranslations('roles');
 
+  const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
+  const [subscribing, setSubscribing] = useState(false);
+
+  useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        const subscriptions = await apiClient<any[]>('/api/subscriptions/my');
+        setHasSubscription(Array.isArray(subscriptions) && subscriptions.length > 0);
+      } catch (err) {
+        console.error('Failed to check subscription:', err);
+        // Assume no subscription on error (user can manually subscribe)
+        setHasSubscription(false);
+      } finally {
+        setCheckingSubscription(false);
+      }
+    };
+
+    if (!loading) {
+      void checkSubscription();
+    }
+  }, [loading]);
+
+  const handleSubscribeFree = async () => {
+    setSubscribing(true);
+    try {
+      const result = await apiClient<any>('/api/subscriptions/auto-subscribe-free', {
+        method: 'POST',
+      });
+
+      if (result.autoSubscribed) {
+        // Successfully subscribed
+        setHasSubscription(true);
+      } else {
+        // Failed to auto-subscribe, redirect to subscription management
+        window.location.href = '/dashboard/subscription';
+      }
+    } catch (err) {
+      console.error('Failed to subscribe:', err);
+      // Redirect to subscription management page for manual subscribe
+      window.location.href = '/dashboard/subscription';
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
   if (!activeMembership) return <NoBusinessState />;
 
@@ -46,6 +94,31 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Fallback: No subscription banner */}
+      {!checkingSubscription && !hasSubscription && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <p className="font-semibold text-amber-900">
+                Daftar ke Paket Gratis Bagdja POS
+              </p>
+              <p className="mt-1 text-sm text-amber-800">
+                Dapatkan akses penuh ke fitur kasir, stok, dan laporan dengan paket gratis. Tanpa biaya tersembunyi.
+              </p>
+            </div>
+            <Button
+              color="warning"
+              size="sm"
+              isLoading={subscribing}
+              onPress={handleSubscribeFree}
+              className="shrink-0"
+            >
+              Daftar Sekarang
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-foreground">{business.name}</h1>
         <p className="text-sm text-default-500">{t('subtitle')}</p>
