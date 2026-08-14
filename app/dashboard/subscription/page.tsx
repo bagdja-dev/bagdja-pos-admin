@@ -139,6 +139,8 @@ export default function SubscriptionPage() {
   const [subscribeOpen, setSubscribeOpen] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [changePlanOpen, setChangePlanOpen] = useState(false);
+  const [changePlanSelectedId, setChangePlanSelectedId] = useState<string | null>(null);
 
   const planById = useMemo(() => {
     const map = new Map<string, SubscriptionPlan>();
@@ -235,6 +237,8 @@ export default function SubscriptionPage() {
       setSubscribeOpen(false);
       setSelectedPlanId(null);
       await loadAll();
+      // Load history for the newly created subscription (will be set by loadAll)
+      // useEffect will trigger automatically when currentSubscription changes
     } catch (err) {
       setActionError(
         err instanceof ApiError ? err.message : 'Gagal berlangganan. Cek saldo lalu coba lagi.',
@@ -255,9 +259,36 @@ export default function SubscriptionPage() {
       });
       setCancelOpen(false);
       await loadAll();
+      // Refresh billing history after cancel
+      if (currentSubscription?.id) {
+        await loadHistory(currentSubscription.id);
+      }
     } catch (err) {
       setActionError(
         err instanceof ApiError ? err.message : 'Gagal membatalkan langganan. Coba lagi.',
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleChangePlan() {
+    if (!changePlanSelectedId || !currentSubscription) return;
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      await apiClient(`/api/subscriptions/${currentSubscription.id}/change-plan`, {
+        method: 'POST',
+        body: JSON.stringify({ planId: changePlanSelectedId }),
+      });
+      setChangePlanOpen(false);
+      setChangePlanSelectedId(null);
+      await loadAll();
+      // Refresh billing history immediately after plan change
+      await loadHistory(currentSubscription.id);
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError ? err.message : 'Gagal mengubah plan. Cek saldo lalu coba lagi.',
       );
     } finally {
       setActionLoading(false);
@@ -418,6 +449,20 @@ export default function SubscriptionPage() {
                         Akan berhenti {formatDate(currentSubscription.currentPeriodEnd)}
                       </Chip>
                     )}
+                  {BLOCKING_STATUSES.has(currentSubscription.status) && (
+                    <Button
+                      color="primary"
+                      variant="flat"
+                      onPress={() => {
+                        setChangePlanSelectedId(
+                          plans.find((p) => p.id !== currentSubscription.planId)?.id ?? null,
+                        );
+                        setChangePlanOpen(true);
+                      }}
+                    >
+                      Ubah ke plan lain
+                    </Button>
+                  )}
                   {canSubscribe && (
                     <Button
                       color="primary"
@@ -638,6 +683,128 @@ export default function SubscriptionPage() {
             otomatis berhenti. Tidak ada pengembalian sisa periode.
           </p>
           <p>Tagihan otomatis berikutnya tidak akan dipotong.</p>
+        </div>
+      </AppModal>
+
+      <AppModal
+        isOpen={changePlanOpen}
+        onClose={() => {
+          setChangePlanOpen(false);
+          setChangePlanSelectedId(null);
+        }}
+        title="Ubah ke Plan Lain"
+        size="lg"
+        footer={
+          <>
+            <Button variant="flat" onPress={() => setChangePlanOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              color="primary"
+              isLoading={actionLoading}
+              isDisabled={!changePlanSelectedId}
+              onPress={handleChangePlan}
+            >
+              Ubah plan sekarang
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="rounded-lg bg-info-50 px-4 py-3">
+            <p className="text-xs text-info-700">
+              💡 <strong>Proration:</strong> Biaya disesuaikan dengan sisa periode plan saat ini. Jika upgrade, 
+              biaya tambahan dipotong dari saldo. Jika downgrade, saldo dikreditkan.
+            </p>
+          </div>
+
+          {currentPlan && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase text-default-400">Plan Saat Ini</p>
+              <div className="rounded-lg border-2 border-primary bg-primary-50 px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-foreground">{currentPlan.name}</p>
+                    {currentPlan.description && (
+                      <p className="mt-1 text-xs text-default-500">{currentPlan.description}</p>
+                    )}
+                  </div>
+                  <p className="shrink-0 font-semibold text-foreground">
+                    {formatCurrency(currentPlan.price, currentPlan.currency)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {plans.length > 0 ? (
+            <>
+              {['MONTHLY', 'YEARLY'].map((interval) => {
+                const intervalPlans = plans.filter(
+                  (p) => p.billingInterval === interval && p.id !== currentSubscription?.planId,
+                );
+                if (intervalPlans.length === 0) return null;
+
+                const intervalLabel = interval === 'MONTHLY' ? 'Bulanan' : 'Tahunan';
+
+                return (
+                  <div key={interval}>
+                    <p className="mb-2 text-xs font-semibold uppercase text-default-400">
+                      {intervalLabel}
+                    </p>
+                    <div className="space-y-2">
+                      {intervalPlans.map((plan) => {
+                        const selected = changePlanSelectedId === plan.id;
+                        const currentPrice = currentPlan?.price ?? 0;
+                        const newPrice = plan.price;
+                        const priceDiff = newPrice - currentPrice;
+                        const isUpgrade = priceDiff > 0;
+
+                        return (
+                          <button
+                            key={plan.id}
+                            type="button"
+                            onClick={() => setChangePlanSelectedId(plan.id)}
+                            className={`w-full rounded-lg border px-4 py-3 text-left transition-colors ${
+                              selected
+                                ? 'border-primary bg-primary-50'
+                                : 'border-default-200 hover:border-default-400'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1">
+                                <p className="font-semibold text-foreground">{plan.name}</p>
+                                {plan.description && (
+                                  <p className="mt-1 text-xs text-default-500">{plan.description}</p>
+                                )}
+                                {priceDiff !== 0 && (
+                                  <p
+                                    className={`mt-2 text-xs font-medium ${
+                                      isUpgrade ? 'text-warning-600' : 'text-success-600'
+                                    }`}
+                                  >
+                                    {isUpgrade ? '⬆ Upgrade' : '⬇ Downgrade'} · {isUpgrade ? '+' : ''}
+                                    {formatCurrency(priceDiff, plan.currency)} / periode
+                                  </p>
+                                )}
+                              </div>
+                              <p className="shrink-0 font-semibold text-foreground">
+                                {formatCurrency(plan.price, plan.currency)}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          ) : (
+            <p className="text-sm text-default-500">
+              Belum ada plan aktif. Hubungi admin Bagdja untuk mengaktifkan paket.
+            </p>
+          )}
         </div>
       </AppModal>
     </div>
