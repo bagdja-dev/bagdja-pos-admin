@@ -5,6 +5,7 @@ import Link from 'next/link';
 
 import { LandingNavbar } from './components/landing-navbar';
 import { LandingPricing } from './components/landing-pricing';
+import { LandingFooter } from './components/landing-footer';
 
 const features = [
   {
@@ -921,29 +922,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Footer ─────────────────────────────────────── */}
-      <footer className="border-t border-gray-100 bg-gray-50 px-4 py-12">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-purple-500">
-                <span className="text-sm font-bold text-white">B</span>
-              </div>
-              <span className="text-lg font-bold text-gray-900">Bagdja POS</span>
-            </div>
-            <div className="flex gap-8 text-sm text-gray-500">
-              <Link href="/privacy-policy" className="transition-colors hover:text-gray-900">Kebijakan Privasi</Link>
-              <Link href="/account-deletion" className="transition-colors hover:text-gray-900">Hapus Akun</Link>
-              <Link href="#" className="transition-colors hover:text-gray-900">Syarat & Ketentuan</Link>
-              <Link href="#contact" className="transition-colors hover:text-gray-900">Kontak</Link>
-            </div>
-          </div>
-          <div className="mt-8 border-t border-gray-200 pt-6 text-center">
-            <p className="text-sm text-gray-400">
-              &copy; {new Date().getFullYear()} Bagdja Platform. Hak cipta dilindungi.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
   );
 }
