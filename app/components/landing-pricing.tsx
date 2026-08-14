@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@heroui/react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { formatCurrency } from '../lib/currency';
@@ -136,10 +137,16 @@ function tierAccent(index: number, total: number): TierAccent {
  * catatan hemat tahunan jika ada pasangan plan yang lebih murah.
  */
 export function LandingPricing() {
+  const router = useRouter();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<IntervalTab>('MONTHLY');
+
+  const handleSubscribeClick = () => {
+    // Redirect ke login dengan next parameter untuk masuk ke subscription page setelah login
+    router.push('/auth/login?next=/dashboard/subscription');
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -420,8 +427,7 @@ export function LandingPricing() {
                       )}
 
                       <Button
-                        as={Link}
-                        href="/auth/login"
+                        onPress={handleSubscribeClick}
                         fullWidth
                         className={`mt-8 font-semibold transition-transform hover:scale-[1.02] py-3 ${
                           highlight

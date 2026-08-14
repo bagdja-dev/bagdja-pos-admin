@@ -2,6 +2,7 @@
 
 import { Button } from '@heroui/react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { LandingNavbar } from './components/landing-navbar';
 import { LandingPricing } from './components/landing-pricing';
@@ -209,6 +210,13 @@ const QR_MOCK_PATTERN = [
 ];
 
 export default function LandingPage() {
+  const router = useRouter();
+
+  const handleStartNow = () => {
+    // Redirect ke login dengan next parameter untuk masuk ke subscription page setelah login
+    router.push('/auth/login?next=/dashboard/subscription');
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <LandingNavbar />
@@ -260,8 +268,7 @@ export default function LandingPage() {
 
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button
-              as={Link}
-              href="/auth/login"
+              onPress={handleStartNow}
               size="lg"
               className="w-full bg-gradient-to-r from-violet-600 to-purple-500 px-8 text-base font-semibold text-white shadow-xl shadow-violet-500/30 transition-all hover:shadow-2xl hover:shadow-violet-500/40 sm:w-auto"
             >
