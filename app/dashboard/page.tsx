@@ -18,8 +18,78 @@ interface ShortcutItem {
 }
 
 // Kotak pintasan aksi cepat dari dashboard — bukan navigasi utama (itu tugas
-// sidebar), jadi cukup satu-dua aksi yang paling sering dipakai lintas peran.
+// sidebar), jadi cukup aksi-aksi yang paling sering dipakai lintas peran.
 const shortcuts: ShortcutItem[] = [
+  {
+    titleKey: 'penjualanTitle',
+    descKey: 'penjualanDesc',
+    href: '/dashboard/invoices/new?type=sale',
+    icon: (
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
+        />
+      </svg>
+    ),
+  },
+  {
+    titleKey: 'pembelianTitle',
+    descKey: 'pembelianDesc',
+    href: '/dashboard/invoices/new?type=purchase',
+    icon: (
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M16.5 14.25a3 3 0 0 1 3 3H3.75m12.75-3-2.394-8.978m-9.356 0L7.5 14.25M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm-3.5-4.5L9.75 2.25l-5.5 13.5h11Z"
+        />
+      </svg>
+    ),
+  },
+  {
+    titleKey: 'returTitle',
+    descKey: 'returDesc',
+    href: '/dashboard/invoices/return/new',
+    icon: (
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+        />
+      </svg>
+    ),
+  },
+  {
+    titleKey: 'mutasiTitle',
+    descKey: 'mutasiDesc',
+    href: '/dashboard/invoices/new?type=transfer',
+    icon: (
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
+        />
+      </svg>
+    ),
+  },
+  {
+    titleKey: 'tukarTambahTitle',
+    descKey: 'tukarTambahDesc',
+    href: '/dashboard/invoice-pairs/new',
+    icon: (
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M16.023 9.348h4.992v-.001M7.977 14.652H2.985v.001m0 0 3.181-3.183a8.25 8.25 0 0 1 13.803 3.7M19.969 14.135a8.25 8.25 0 0 0-13.803 3.7l-3.181-3.182M8.25 6.75l4.5 4.5m0 0 4.5-4.5m-4.5 4.5V21"
+        />
+      </svg>
+    ),
+  },
   {
     titleKey: 'debtNoteTitle',
     descKey: 'debtNoteDesc',
@@ -29,7 +99,7 @@ const shortcuts: ShortcutItem[] = [
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
-          d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"
+          d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 1 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"
         />
       </svg>
     ),

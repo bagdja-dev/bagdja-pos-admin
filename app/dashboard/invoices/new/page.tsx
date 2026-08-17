@@ -55,14 +55,25 @@ function isAmountBasedType(type: PosInvoiceType): boolean {
   return type === 'capital' || type === 'withdrawal' || type === 'kasbon';
 }
 
-export default function NewInvoicePage() {
+const VALID_TYPES: PosInvoiceType[] = ['sale', 'purchase', 'transfer', 'capital', 'withdrawal', 'kasbon'];
+
+interface NewInvoicePageProps {
+  searchParams?: { type?: string };
+}
+
+export default function NewInvoicePage({ searchParams }: NewInvoicePageProps) {
   const router = useRouter();
   const { businessId, activeMembership, loading: businessLoading } = useBusinessContext();
   function formatCurrency(value: number | string) {
     return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
   }
 
-  const [type, setType] = useState<PosInvoiceType>('sale');
+  const initialType: PosInvoiceType =
+    searchParams?.type && VALID_TYPES.includes(searchParams.type as PosInvoiceType)
+      ? (searchParams.type as PosInvoiceType)
+      : 'sale';
+
+  const [type, setType] = useState<PosInvoiceType>(initialType);
   const [locationId, setLocationId] = useState('');
   const [locationLabel, setLocationLabel] = useState('');
   const [partyId, setPartyId] = useState('');
