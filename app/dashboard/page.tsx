@@ -1,14 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Card, CardBody, CardHeader } from '@heroui/react';
 import { useTranslations } from 'next-intl';
 
 import { LoadingSpinner } from '../components/loading-spinner';
 import { NoBusinessState } from '../components/no-business-state';
 import { useBusinessContext } from '../context/business-context';
-import { apiClient } from '../lib/api-client';
+import { apiClient, ApiError } from '../lib/api-client';
+import { formatCurrency as formatMoney } from '../lib/currency';
 
 interface ShortcutItem {
   titleKey: string;
@@ -16,6 +17,31 @@ interface ShortcutItem {
   href: string;
   icon: React.ReactNode;
 }
+
+interface TrendPoint {
+  bucket: string;
+  amount: number;
+  cashIn?: number;
+  cashOut?: number;
+}
+
+interface TrendReport {
+  metric: 'revenue' | 'cash';
+  granularity: 'daily' | 'monthly';
+  range: 'month' | 'year';
+  total: number;
+  peak: { bucket: string; amount: number };
+  points: TrendPoint[];
+}
+
+type TrendKey = 'revenueDaily' | 'cashDaily' | 'revenueMonthly' | 'cashMonthly';
+
+const TREND_REQUESTS: Record<TrendKey, { metric: string; granularity: string; range: string }> = {
+  revenueDaily: { metric: 'revenue', granularity: 'daily', range: 'month' },
+  cashDaily: { metric: 'cash', granularity: 'daily', range: 'month' },
+  revenueMonthly: { metric: 'revenue', granularity: 'monthly', range: 'year' },
+  cashMonthly: { metric: 'cash', granularity: 'monthly', range: 'year' },
+};
 
 // Kotak pintasan aksi cepat dari dashboard — bukan navigasi utama (itu tugas
 // sidebar), jadi cukup aksi-aksi yang paling sering dipakai lintas peran.
@@ -106,14 +132,193 @@ const shortcuts: ShortcutItem[] = [
   },
 ];
 
+function shortenLabel(bucket: string, granularity: 'daily' | 'monthly'): string {
+  if (granularity === 'daily') {
+    const parts = bucket.split('-');
+    return parts[2] ?? bucket;
+  }
+  const m = Number(bucket.split('-')[1] ?? '1');
+  const names = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  return names[m - 1] ?? bucket;
+}
+
+function TrendBar({
+  report,
+  colorClass,
+}: {
+  report: TrendReport;
+  colorClass: string;
+}) {
+  const { points, granularity } = report;
+  const max = useMemo(() => {
+    let m = 0;
+    for (const p of points) if (p.amount > m) m = p.amount;
+    return m || 1;
+  }, [points]);
+
+  const maxBars = 16;
+  const step = Math.max(1, Math.ceil(points.length / maxBars));
+  const visible = points.filter((_, idx) => idx % step === 0 || idx === points.length - 1);
+
+  return (
+    <div className="flex h-20 items-end gap-[2px] overflow-hidden">
+      {visible.map((p) => {
+        const h = Math.max(2, Math.round((p.amount / max) * 100));
+        return (
+          <div
+            key={p.bucket}
+            className="group relative flex flex-1 flex-col items-center"
+            title={`${shortenLabel(p.bucket, granularity)}: ${formatMoney(p.amount)}`}
+          >
+            <div
+              className={`w-full rounded-t-md ${colorClass} transition-all`}
+              style={{ height: `${h}%`, minHeight: '2px' }}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TrendBarLabels({ report }: { report: TrendReport }) {
+  const { points, granularity } = report;
+  const maxBars = 16;
+  const step = Math.max(1, Math.ceil(points.length / maxBars));
+  const visible = points.filter((_, idx) => idx % step === 0 || idx === points.length - 1);
+
+  return (
+    <div className="mt-1 flex gap-[2px] text-[8px] leading-none text-default-400 sm:text-[10px]">
+      {visible.map((p) => (
+        <div key={p.bucket} className="flex-1 text-center">
+          {shortenLabel(p.bucket, granularity)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StatCard({
+  title,
+  subtitle,
+  total,
+  peak,
+  report,
+  currency,
+  locale,
+  loading,
+  accent = 'primary',
+}: {
+  title: string;
+  subtitle: string;
+  total: number;
+  peak: { bucket: string; amount: number } | null;
+  report: TrendReport | null;
+  currency?: string;
+  locale?: string;
+  loading: boolean;
+  accent?: 'primary' | 'success' | 'warning' | 'secondary';
+}) {
+  const accentBg = {
+    primary: 'bg-primary/80',
+    success: 'bg-success/80',
+    warning: 'bg-warning/70',
+    secondary: 'bg-secondary/80',
+  }[accent];
+  const accentText = {
+    primary: 'text-primary',
+    success: 'text-success',
+    warning: 'text-warning',
+    secondary: 'text-secondary',
+  }[accent];
+
+  return (
+    <Card shadow="sm">
+      <CardHeader className="flex flex-col items-start gap-0 pb-1">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-default-500 sm:text-xs">{title}</p>
+        <p className="text-[10px] text-default-400 sm:text-[11px]">{subtitle}</p>
+      </CardHeader>
+      <CardBody className="space-y-2 pt-1">
+        {loading ? (
+          <div className="flex h-[120px] items-center justify-center">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-default-200 border-t-primary" />
+          </div>
+        ) : report ? (
+          <>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className={`text-lg font-bold ${accentText} sm:text-2xl`}>{formatMoney(total, currency, locale)}</p>
+            </div>
+            {peak && peak.amount > 0 && (
+              <p className="text-[10px] text-default-500 sm:text-xs">
+                <span className="font-semibold text-default-700">Tertinggi:</span>{' '}
+                {shortenLabel(peak.bucket, report.granularity)} — {formatMoney(peak.amount, currency, locale)}
+              </p>
+            )}
+            <TrendBar report={report} colorClass={accentBg} />
+            <TrendBarLabels report={report} />
+          </>
+        ) : (
+          <div className="flex h-[120px] items-center justify-center text-xs text-default-400">
+            Belum ada data
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
+
 export default function DashboardPage() {
-  const { loading, activeMembership } = useBusinessContext();
+  const { loading, activeMembership, businessId } = useBusinessContext();
   const t = useTranslations('dashboard');
   const tRoles = useTranslations('roles');
+  function formatCurrency(value: number | string) {
+    return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
+  }
 
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
+
+  const [trends, setTrends] = useState<Record<TrendKey, TrendReport | null>>({
+    revenueDaily: null,
+    cashDaily: null,
+    revenueMonthly: null,
+    cashMonthly: null,
+  });
+  const [trendsLoading, setTrendsLoading] = useState(true);
+  const [trendsError, setTrendsError] = useState<string | null>(null);
+
+  const fetchTrends = useCallback(async () => {
+    if (!businessId) return;
+    setTrendsLoading(true);
+    setTrendsError(null);
+    try {
+      const keys: TrendKey[] = ['revenueDaily', 'cashDaily', 'revenueMonthly', 'cashMonthly'];
+      const result = await Promise.all(
+        keys.map(async (k) => {
+          const r = TREND_REQUESTS[k];
+          const qs = new URLSearchParams({
+            metric: r.metric,
+            granularity: r.granularity,
+            range: r.range,
+          });
+          return [k, await apiClient<TrendReport>(`/api/businesses/${businessId}/reports/trends?${qs.toString()}`)] as const;
+        }),
+      );
+      const next: Record<TrendKey, TrendReport | null> = {
+        revenueDaily: null,
+        cashDaily: null,
+        revenueMonthly: null,
+        cashMonthly: null,
+      };
+      for (const [k, v] of result) next[k] = v;
+      setTrends(next);
+    } catch (err) {
+      setTrendsError(err instanceof ApiError ? err.message : 'Gagal memuat statistik');
+    } finally {
+      setTrendsLoading(false);
+    }
+  }, [businessId]);
 
   useEffect(() => {
     const checkSubscription = async () => {
@@ -122,7 +327,6 @@ export default function DashboardPage() {
         setHasSubscription(Array.isArray(subscriptions) && subscriptions.length > 0);
       } catch (err) {
         console.error('Failed to check subscription:', err);
-        // Assume no subscription on error (user can manually subscribe)
         setHasSubscription(false);
       } finally {
         setCheckingSubscription(false);
@@ -131,8 +335,9 @@ export default function DashboardPage() {
 
     if (!loading) {
       void checkSubscription();
+      void fetchTrends();
     }
-  }, [loading]);
+  }, [loading, fetchTrends]);
 
   const handleSubscribeFree = async () => {
     setSubscribing(true);
@@ -142,15 +347,12 @@ export default function DashboardPage() {
       });
 
       if (result.autoSubscribed) {
-        // Successfully subscribed
         setHasSubscription(true);
       } else {
-        // Failed to auto-subscribe, redirect to subscription management
         window.location.href = '/dashboard/subscription';
       }
     } catch (err) {
       console.error('Failed to subscribe:', err);
-      // Redirect to subscription management page for manual subscribe
       window.location.href = '/dashboard/subscription';
     } finally {
       setSubscribing(false);
@@ -161,6 +363,11 @@ export default function DashboardPage() {
   if (!activeMembership) return <NoBusinessState />;
 
   const { business, role, location } = activeMembership;
+  const currency = business.currency;
+  const locale = business.locale;
+  const now = new Date();
+  const monthLabel = now.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+  const yearLabel = `${now.getFullYear()}`;
 
   return (
     <div className="space-y-6">
@@ -224,6 +431,58 @@ export default function DashboardPage() {
               <span className="text-xs font-medium leading-tight text-foreground">{t(shortcut.titleKey)}</span>
             </Link>
           ))}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {trendsError && (
+          <p className="text-xs text-danger sm:text-sm">{trendsError}</p>
+        )}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <StatCard
+            title="Omset Harian"
+            subtitle={`Bulan ${monthLabel}`}
+            total={trends.revenueDaily?.total ?? 0}
+            peak={trends.revenueDaily?.peak ?? null}
+            report={trends.revenueDaily}
+            currency={currency}
+            locale={locale}
+            loading={trendsLoading}
+            accent="success"
+          />
+          <StatCard
+            title="Kas Harian"
+            subtitle={`Bulan ${monthLabel}`}
+            total={trends.cashDaily?.total ?? 0}
+            peak={trends.cashDaily?.peak ?? null}
+            report={trends.cashDaily}
+            currency={currency}
+            locale={locale}
+            loading={trendsLoading}
+            accent="primary"
+          />
+          <StatCard
+            title="Omset Bulanan"
+            subtitle={`Tahun ${yearLabel}`}
+            total={trends.revenueMonthly?.total ?? 0}
+            peak={trends.revenueMonthly?.peak ?? null}
+            report={trends.revenueMonthly}
+            currency={currency}
+            locale={locale}
+            loading={trendsLoading}
+            accent="secondary"
+          />
+          <StatCard
+            title="Kas Bulanan"
+            subtitle={`Tahun ${yearLabel}`}
+            total={trends.cashMonthly?.total ?? 0}
+            peak={trends.cashMonthly?.peak ?? null}
+            report={trends.cashMonthly}
+            currency={currency}
+            locale={locale}
+            loading={trendsLoading}
+            accent="warning"
+          />
         </div>
       </div>
 
