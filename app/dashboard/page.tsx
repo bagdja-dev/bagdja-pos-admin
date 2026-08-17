@@ -43,6 +43,35 @@ const TREND_REQUESTS: Record<TrendKey, { metric: string; granularity: string; ra
   cashMonthly: { metric: 'cash', granularity: 'monthly', range: 'year' },
 };
 
+interface FinancialSummaryReport {
+  kasBersih: number;
+  totalPiutang: number;
+  totalHutang: number;
+  kasBreakdown: { cashIn: number; cashOut: number };
+}
+
+type PieSegmentKey = 'kas' | 'piutang' | 'hutang';
+const PIE_COLORS: Record<PieSegmentKey, { fill: string; text: string; dot: string; label: string }> = {
+  kas: {
+    fill: '#006FEE',
+    text: 'text-primary',
+    dot: 'bg-primary',
+    label: 'Kas Bersih',
+  },
+  piutang: {
+    fill: '#F5A524',
+    text: 'text-warning',
+    dot: 'bg-warning',
+    label: 'Piutang',
+  },
+  hutang: {
+    fill: '#F31260',
+    text: 'text-danger',
+    dot: 'bg-danger',
+    label: 'Hutang',
+  },
+};
+
 // Kotak pintasan aksi cepat dari dashboard — bukan navigasi utama (itu tugas
 // sidebar), jadi cukup aksi-aksi yang paling sering dipakai lintas peran.
 const shortcuts: ShortcutItem[] = [
@@ -267,6 +296,119 @@ function StatCard({
   );
 }
 
+function FinancialPieChart({
+  summary,
+  currency,
+  locale,
+  loading,
+}: {
+  summary: FinancialSummaryReport | null;
+  currency?: string;
+  locale?: string;
+  loading: boolean;
+}) {
+  const segments: Array<{ key: PieSegmentKey; value: number }> = useMemo(() => {
+    const kas = Math.max(0, summary?.kasBersih ?? 0);
+    const piutang = Math.max(0, summary?.totalPiutang ?? 0);
+    const hutang = Math.max(0, summary?.totalHutang ?? 0);
+    return [
+      { key: 'kas', value: kas },
+      { key: 'piutang', value: piutang },
+      { key: 'hutang', value: hutang },
+    ];
+  }, [summary]);
+
+  const total = useMemo(() => segments.reduce((acc, s) => acc + s.value, 0), [segments]);
+
+  const { gradientParts, percentages } = useMemo(() => {
+    if (total <= 0) {
+      return {
+        gradientParts: '#e5e7eb 0% 100%',
+        percentages: { kas: 0, piutang: 0, hutang: 0 } as Record<PieSegmentKey, number>,
+      };
+    }
+    const pcts: Record<PieSegmentKey, number> = { kas: 0, piutang: 0, hutang: 0 };
+    let acc = 0;
+    const parts: string[] = [];
+    for (const s of segments) {
+      const p = (s.value / total) * 100;
+      pcts[s.key] = Math.round(p * 100) / 100;
+      const start = acc;
+      acc += p;
+      const end = acc;
+      const color = PIE_COLORS[s.key].fill;
+      parts.push(`${color} ${start}% ${end}%`);
+    }
+    return { gradientParts: parts.join(', '), percentages: pcts };
+  }, [segments, total]);
+
+  if (loading) {
+    return (
+      <div className="flex h-[220px] items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-default-200 border-t-primary" />
+      </div>
+    );
+  }
+
+  if (!summary || total <= 0) {
+    return (
+      <div className="flex h-[220px] flex-col items-center justify-center gap-2 text-xs text-default-400">
+        <div
+          className="h-28 w-28 rounded-full"
+          style={{ background: 'conic-gradient(#e5e7eb 0% 100%)' }}
+        />
+        Belum ada data finansial
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:gap-6">
+      <div className="relative shrink-0">
+        <div
+          className="h-36 w-36 rounded-full sm:h-44 sm:w-44"
+          style={{ background: `conic-gradient(${gradientParts})` }}
+        />
+        <div className="absolute inset-3 flex flex-col items-center justify-center rounded-full bg-white dark:bg-default-50 sm:inset-4">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-default-500 sm:text-xs">Total</p>
+          <p className="text-sm font-bold text-foreground sm:text-lg">{formatMoney(total, currency, locale)}</p>
+        </div>
+      </div>
+
+      <div className="w-full flex-1 space-y-2">
+        {segments.map((s) => {
+          const color = PIE_COLORS[s.key];
+          const pct = percentages[s.key];
+          return (
+            <div key={s.key} className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className={`h-3 w-3 shrink-0 rounded-full ${color.dot}`} />
+                <span className={`text-[11px] font-medium sm:text-sm ${color.text}`}>{color.label}</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs font-semibold text-default-700 sm:text-sm">
+                  {formatMoney(s.value, currency, locale)}
+                </span>
+                <span className="text-[10px] font-bold text-default-500 sm:text-xs">{pct.toFixed(1)}%</span>
+              </div>
+            </div>
+          );
+        })}
+        <div className="mt-2 border-t border-default-200 pt-2">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[10px] text-default-500 sm:text-xs">Kas Masuk / Keluar</span>
+            <span className="text-[10px] text-default-500 sm:text-xs">
+              <span className="text-success">{formatMoney(summary.kasBreakdown.cashIn, currency, locale)}</span>
+              {' / '}
+              <span className="text-danger">{formatMoney(summary.kasBreakdown.cashOut, currency, locale)}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { loading, activeMembership, businessId } = useBusinessContext();
   const t = useTranslations('dashboard');
@@ -287,6 +429,10 @@ export default function DashboardPage() {
   });
   const [trendsLoading, setTrendsLoading] = useState(true);
   const [trendsError, setTrendsError] = useState<string | null>(null);
+
+  const [financialSummary, setFinancialSummary] = useState<FinancialSummaryReport | null>(null);
+  const [finSummaryLoading, setFinSummaryLoading] = useState(true);
+  const [finSummaryError, setFinSummaryError] = useState<string | null>(null);
 
   const fetchTrends = useCallback(async () => {
     if (!businessId) return;
@@ -320,6 +466,22 @@ export default function DashboardPage() {
     }
   }, [businessId]);
 
+  const fetchFinancialSummary = useCallback(async () => {
+    if (!businessId) return;
+    setFinSummaryLoading(true);
+    setFinSummaryError(null);
+    try {
+      const res = await apiClient<FinancialSummaryReport>(
+        `/api/businesses/${businessId}/reports/financial-summary`,
+      );
+      setFinancialSummary(res);
+    } catch (err) {
+      setFinSummaryError(err instanceof ApiError ? err.message : 'Gagal memuat ringkasan finansial');
+    } finally {
+      setFinSummaryLoading(false);
+    }
+  }, [businessId]);
+
   useEffect(() => {
     const checkSubscription = async () => {
       try {
@@ -336,8 +498,9 @@ export default function DashboardPage() {
     if (!loading) {
       void checkSubscription();
       void fetchTrends();
+      void fetchFinancialSummary();
     }
-  }, [loading, fetchTrends]);
+  }, [loading, fetchTrends, fetchFinancialSummary]);
 
   const handleSubscribeFree = async () => {
     setSubscribing(true);
@@ -484,6 +647,30 @@ export default function DashboardPage() {
             accent="warning"
           />
         </div>
+      </div>
+
+      <div className="space-y-3">
+        {finSummaryError && (
+          <p className="text-xs text-danger sm:text-sm">{finSummaryError}</p>
+        )}
+        <Card shadow="sm">
+          <CardHeader className="flex flex-col items-start gap-0 pb-1">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-default-500 sm:text-xs">
+              Komposisi Aset
+            </p>
+            <p className="text-[10px] text-default-400 sm:text-[11px]">
+              Kas bersih, piutang, dan hutang seumur hidup
+            </p>
+          </CardHeader>
+          <CardBody className="pt-1">
+            <FinancialPieChart
+              summary={financialSummary}
+              currency={currency}
+              locale={locale}
+              loading={finSummaryLoading}
+            />
+          </CardBody>
+        </Card>
       </div>
 
       <p className="text-sm text-default-400">{t('hint')}</p>
