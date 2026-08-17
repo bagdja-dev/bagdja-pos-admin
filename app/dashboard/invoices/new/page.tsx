@@ -61,6 +61,11 @@ interface NewInvoicePageProps {
   searchParams?: { type?: string };
 }
 
+function resolveInitialType(raw: unknown): PosInvoiceType {
+  const t = typeof raw === 'string' ? raw : '';
+  return VALID_TYPES.includes(t as PosInvoiceType) ? (t as PosInvoiceType) : 'sale';
+}
+
 export default function NewInvoicePage({ searchParams }: NewInvoicePageProps) {
   const router = useRouter();
   const { businessId, activeMembership, loading: businessLoading } = useBusinessContext();
@@ -68,12 +73,7 @@ export default function NewInvoicePage({ searchParams }: NewInvoicePageProps) {
     return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
   }
 
-  const initialType: PosInvoiceType =
-    searchParams?.type && VALID_TYPES.includes(searchParams.type as PosInvoiceType)
-      ? (searchParams.type as PosInvoiceType)
-      : 'sale';
-
-  const [type, setType] = useState<PosInvoiceType>(initialType);
+  const [type, setType] = useState<PosInvoiceType>(() => resolveInitialType(searchParams?.type));
   const [locationId, setLocationId] = useState('');
   const [locationLabel, setLocationLabel] = useState('');
   const [partyId, setPartyId] = useState('');
@@ -92,6 +92,16 @@ export default function NewInvoicePage({ searchParams }: NewInvoicePageProps) {
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [contactModalQuery, setContactModalQuery] = useState('');
   const hasAutoSelectedLocationRef = useRef(false);
+  const lastAppliedTypeRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const nextType = resolveInitialType(searchParams?.type);
+    if (lastAppliedTypeRef.current === nextType) return;
+    lastAppliedTypeRef.current = nextType;
+    setType(nextType);
+    setPartyId('');
+    setPartyLabel('');
+  }, [searchParams?.type]);
 
   const partyType: PosContactType | 'outlet' =
     type === 'sale'
