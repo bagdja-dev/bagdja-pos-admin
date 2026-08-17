@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Select, SelectItem, Textarea } from '@heroui/react';
 
 import { AsyncSearchSelect, type PagedFetchResult } from '../../../components/async-search-select';
@@ -57,23 +57,22 @@ function isAmountBasedType(type: PosInvoiceType): boolean {
 
 const VALID_TYPES: PosInvoiceType[] = ['sale', 'purchase', 'transfer', 'capital', 'withdrawal', 'kasbon'];
 
-interface NewInvoicePageProps {
-  searchParams?: { type?: string };
-}
-
-function resolveInitialType(raw: unknown): PosInvoiceType {
+function resolveType(raw: unknown): PosInvoiceType {
   const t = typeof raw === 'string' ? raw : '';
   return VALID_TYPES.includes(t as PosInvoiceType) ? (t as PosInvoiceType) : 'sale';
 }
 
-export default function NewInvoicePage({ searchParams }: NewInvoicePageProps) {
+export default function NewInvoicePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { businessId, activeMembership, loading: businessLoading } = useBusinessContext();
   function formatCurrency(value: number | string) {
     return formatMoney(value, activeMembership?.business.currency, activeMembership?.business.locale);
   }
 
-  const [type, setType] = useState<PosInvoiceType>(() => resolveInitialType(searchParams?.type));
+  const initialTypeParam = searchParams ? searchParams.get('type') : null;
+
+  const [type, setType] = useState<PosInvoiceType>(() => resolveType(initialTypeParam));
   const [locationId, setLocationId] = useState('');
   const [locationLabel, setLocationLabel] = useState('');
   const [partyId, setPartyId] = useState('');
@@ -95,13 +94,16 @@ export default function NewInvoicePage({ searchParams }: NewInvoicePageProps) {
   const lastAppliedTypeRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const nextType = resolveInitialType(searchParams?.type);
+    const rawType = searchParams.get('type');
+    const nextType = resolveType(rawType);
     if (lastAppliedTypeRef.current === nextType) return;
     lastAppliedTypeRef.current = nextType;
     setType(nextType);
     setPartyId('');
     setPartyLabel('');
-  }, [searchParams?.type]);
+  }, [searchParams]);
+
+  const selectedTypeKeys = useMemo(() => new Set([type]), [type]);
 
   const partyType: PosContactType | 'outlet' =
     type === 'sale'
@@ -331,9 +333,17 @@ export default function NewInvoicePage({ searchParams }: NewInvoicePageProps) {
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <Select
           label="Tipe Faktur"
-          selectedKeys={[type]}
+          selectedKeys={selectedTypeKeys}
           onSelectionChange={(keys) => {
-            setType(Array.from(keys)[0] as PosInvoiceType);
+            const arr = typeof keys === 'object' && keys !== null && Symbol.iterator in Object(keys)
+              ? Array.from(keys as Iterable<string>)
+              : [];
+            const chosen = arr[0];
+            if (!chosen) return;
+            const newType = VALID_TYPES.includes(chosen as PosInvoiceType)
+              ? (chosen as PosInvoiceType)
+              : 'sale';
+            setType(newType);
             setPartyId('');
             setPartyLabel('');
           }}
