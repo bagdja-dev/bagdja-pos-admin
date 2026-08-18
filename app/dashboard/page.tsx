@@ -598,6 +598,30 @@ export default function DashboardPage() {
       </div>
 
       <div className="space-y-3">
+        {finSummaryError && (
+          <p className="text-xs text-danger sm:text-sm">{finSummaryError}</p>
+        )}
+        <Card shadow="sm">
+          <CardHeader className="flex flex-col items-start gap-0 pb-1">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-default-500 sm:text-xs">
+              Komposisi Aset
+            </p>
+            <p className="text-[10px] text-default-400 sm:text-[11px]">
+              Kas bersih, piutang, dan hutang seumur hidup
+            </p>
+          </CardHeader>
+          <CardBody className="pt-1">
+            <FinancialPieChart
+              summary={financialSummary}
+              currency={currency}
+              locale={locale}
+              loading={finSummaryLoading}
+            />
+          </CardBody>
+        </Card>
+      </div>
+
+      <div className="space-y-3">
         {trendsError && (
           <p className="text-xs text-danger sm:text-sm">{trendsError}</p>
         )}
@@ -647,30 +671,6 @@ export default function DashboardPage() {
             accent="warning"
           />
         </div>
-      </div>
-
-      <div className="space-y-3">
-        {finSummaryError && (
-          <p className="text-xs text-danger sm:text-sm">{finSummaryError}</p>
-        )}
-        <Card shadow="sm">
-          <CardHeader className="flex flex-col items-start gap-0 pb-1">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-default-500 sm:text-xs">
-              Komposisi Aset
-            </p>
-            <p className="text-[10px] text-default-400 sm:text-[11px]">
-              Kas bersih, piutang, dan hutang seumur hidup
-            </p>
-          </CardHeader>
-          <CardBody className="pt-1">
-            <FinancialPieChart
-              summary={financialSummary}
-              currency={currency}
-              locale={locale}
-              loading={finSummaryLoading}
-            />
-          </CardBody>
-        </Card>
       </div>
 
       <p className="text-sm text-default-400">{t('hint')}</p>
