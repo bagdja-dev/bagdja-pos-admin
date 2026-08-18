@@ -72,6 +72,47 @@ const PIE_COLORS: Record<PieSegmentKey, { fill: string; text: string; dot: strin
   },
 };
 
+type StockBucketKey = 'empty' | 'low' | 'safe' | 'overstock';
+interface StockSummaryReport {
+  buckets: Record<StockBucketKey, { skuCount: number; totalQty: number }>;
+  totalSku: number;
+  totalQty: number;
+  urgentSkuCount: number;
+}
+const STOCK_PIE_COLORS: Record<
+  StockBucketKey,
+  { fill: string; text: string; dot: string; label: string; hint: string }
+> = {
+  empty: {
+    fill: '#F31260',
+    text: 'text-danger',
+    dot: 'bg-danger',
+    label: 'Stok Habis',
+    hint: '0 unit — wajib restok',
+  },
+  low: {
+    fill: '#F5A524',
+    text: 'text-warning',
+    dot: 'bg-warning',
+    label: 'Mendekati Min',
+    hint: '≤ minimum / ≤ 2 unit',
+  },
+  safe: {
+    fill: '#17C964',
+    text: 'text-success',
+    dot: 'bg-success',
+    label: 'Aman / Cukup',
+    hint: '> min s/d 3× min stok',
+  },
+  overstock: {
+    fill: '#006FEE',
+    text: 'text-primary',
+    dot: 'bg-primary',
+    label: 'Kelebihan',
+    hint: '> 3× min stok — modal terikat',
+  },
+};
+
 // Kotak pintasan aksi cepat dari dashboard — bukan navigasi utama (itu tugas
 // sidebar), jadi cukup aksi-aksi yang paling sering dipakai lintas peran.
 const shortcuts: ShortcutItem[] = [
@@ -409,6 +450,121 @@ function FinancialPieChart({
   );
 }
 
+function StockPieChart({
+  summary,
+  loading,
+}: {
+  summary: StockSummaryReport | null;
+  loading: boolean;
+}) {
+  const segments: Array<{ key: StockBucketKey; skuCount: number; totalQty: number }> = useMemo(() => {
+    const keys: StockBucketKey[] = ['empty', 'low', 'safe', 'overstock'];
+    return keys.map((k) => ({
+      key: k,
+      skuCount: Math.max(0, summary?.buckets[k].skuCount ?? 0),
+      totalQty: Math.max(0, summary?.buckets[k].totalQty ?? 0),
+    }));
+  }, [summary]);
+
+  const totalSku = useMemo(() => segments.reduce((acc, s) => acc + s.skuCount, 0), [segments]);
+
+  const { gradientParts, percentages } = useMemo(() => {
+    if (totalSku <= 0) {
+      return {
+        gradientParts: '#e5e7eb 0% 100%',
+        percentages: { empty: 0, low: 0, safe: 0, overstock: 0 } as Record<StockBucketKey, number>,
+      };
+    }
+    const pcts: Record<StockBucketKey, number> = { empty: 0, low: 0, safe: 0, overstock: 0 };
+    let acc = 0;
+    const parts: string[] = [];
+    for (const s of segments) {
+      const p = (s.skuCount / totalSku) * 100;
+      pcts[s.key] = Math.round(p * 100) / 100;
+      const start = acc;
+      acc += p;
+      const end = acc;
+      const color = STOCK_PIE_COLORS[s.key].fill;
+      parts.push(`${color} ${start}% ${end}%`);
+    }
+    return { gradientParts: parts.join(', '), percentages: pcts };
+  }, [segments, totalSku]);
+
+  if (loading) {
+    return (
+      <div className="flex h-[220px] items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-default-200 border-t-primary" />
+      </div>
+    );
+  }
+
+  if (!summary || totalSku <= 0) {
+    return (
+      <div className="flex h-[220px] flex-col items-center justify-center gap-2 text-xs text-default-400">
+        <div
+          className="h-28 w-28 rounded-full"
+          style={{ background: 'conic-gradient(#e5e7eb 0% 100%)' }}
+        />
+        Belum ada data stok
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:gap-6">
+      <div className="relative shrink-0">
+        <div
+          className="h-36 w-36 rounded-full sm:h-44 sm:w-44"
+          style={{ background: `conic-gradient(${gradientParts})` }}
+        />
+        <div className="absolute inset-3 flex flex-col items-center justify-center rounded-full bg-white dark:bg-default-50 sm:inset-4">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-default-500 sm:text-xs">Total SKU</p>
+          <p className="text-sm font-bold text-foreground sm:text-lg">{summary.totalSku}</p>
+        </div>
+      </div>
+
+      <div className="w-full flex-1 space-y-2">
+        {segments.map((s) => {
+          const color = STOCK_PIE_COLORS[s.key];
+          const pct = percentages[s.key];
+          return (
+            <div key={s.key} className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className={`h-3 w-3 shrink-0 rounded-full ${color.dot}`} />
+                <div className="flex flex-col">
+                  <span className={`text-[11px] font-medium sm:text-sm ${color.text}`}>{color.label}</span>
+                  <span className="text-[9px] text-default-400 sm:text-[10px]">{color.hint}</span>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-0.5">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs font-semibold text-default-700 sm:text-sm">
+                    {s.skuCount} SKU
+                  </span>
+                  <span className="text-[10px] font-bold text-default-500 sm:text-xs">{pct.toFixed(1)}%</span>
+                </div>
+                <span className="text-[9px] text-default-400 sm:text-[10px]">{s.totalQty} unit</span>
+              </div>
+            </div>
+          );
+        })}
+        <div className="mt-2 border-t border-default-200 pt-2">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[10px] text-default-500 sm:text-xs">
+              Total Unit / Butuh Perhatian
+            </span>
+            <span className="text-[10px] text-default-500 sm:text-xs">
+              <span className="font-semibold text-foreground">{summary.totalQty} unit</span>
+              {' / '}
+              <span className="font-bold text-danger">{summary.urgentSkuCount} SKU</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { loading, activeMembership, businessId } = useBusinessContext();
   const t = useTranslations('dashboard');
@@ -433,6 +589,10 @@ export default function DashboardPage() {
   const [financialSummary, setFinancialSummary] = useState<FinancialSummaryReport | null>(null);
   const [finSummaryLoading, setFinSummaryLoading] = useState(true);
   const [finSummaryError, setFinSummaryError] = useState<string | null>(null);
+
+  const [stockSummary, setStockSummary] = useState<StockSummaryReport | null>(null);
+  const [stockSummaryLoading, setStockSummaryLoading] = useState(true);
+  const [stockSummaryError, setStockSummaryError] = useState<string | null>(null);
 
   const fetchTrends = useCallback(async () => {
     if (!businessId) return;
@@ -482,6 +642,22 @@ export default function DashboardPage() {
     }
   }, [businessId]);
 
+  const fetchStockSummary = useCallback(async () => {
+    if (!businessId) return;
+    setStockSummaryLoading(true);
+    setStockSummaryError(null);
+    try {
+      const res = await apiClient<StockSummaryReport>(
+        `/api/businesses/${businessId}/reports/stock-summary`,
+      );
+      setStockSummary(res);
+    } catch (err) {
+      setStockSummaryError(err instanceof ApiError ? err.message : 'Gagal memuat ringkasan stok');
+    } finally {
+      setStockSummaryLoading(false);
+    }
+  }, [businessId]);
+
   useEffect(() => {
     const checkSubscription = async () => {
       try {
@@ -499,8 +675,9 @@ export default function DashboardPage() {
       void checkSubscription();
       void fetchTrends();
       void fetchFinancialSummary();
+      void fetchStockSummary();
     }
-  }, [loading, fetchTrends, fetchFinancialSummary]);
+  }, [loading, fetchTrends, fetchFinancialSummary, fetchStockSummary]);
 
   const handleSubscribeFree = async () => {
     setSubscribing(true);
@@ -598,27 +775,49 @@ export default function DashboardPage() {
       </div>
 
       <div className="space-y-3">
-        {finSummaryError && (
-          <p className="text-xs text-danger sm:text-sm">{finSummaryError}</p>
+        {(finSummaryError || stockSummaryError) && (
+          <div className="space-y-1">
+            {finSummaryError && <p className="text-xs text-danger sm:text-sm">{finSummaryError}</p>}
+            {stockSummaryError && <p className="text-xs text-danger sm:text-sm">{stockSummaryError}</p>}
+          </div>
         )}
-        <Card shadow="sm">
-          <CardHeader className="flex flex-col items-start gap-0 pb-1">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-default-500 sm:text-xs">
-              Komposisi Aset
-            </p>
-            <p className="text-[10px] text-default-400 sm:text-[11px]">
-              Kas bersih, piutang, dan hutang seumur hidup
-            </p>
-          </CardHeader>
-          <CardBody className="pt-1">
-            <FinancialPieChart
-              summary={financialSummary}
-              currency={currency}
-              locale={locale}
-              loading={finSummaryLoading}
-            />
-          </CardBody>
-        </Card>
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <Card shadow="sm">
+            <CardHeader className="flex flex-col items-start gap-0 pb-1">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-default-500 sm:text-xs">
+                Komposisi Aset
+              </p>
+              <p className="text-[10px] text-default-400 sm:text-[11px]">
+                Kas bersih, piutang, dan hutang seumur hidup
+              </p>
+            </CardHeader>
+            <CardBody className="pt-1">
+              <FinancialPieChart
+                summary={financialSummary}
+                currency={currency}
+                locale={locale}
+                loading={finSummaryLoading}
+              />
+            </CardBody>
+          </Card>
+
+          <Card shadow="sm">
+            <CardHeader className="flex flex-col items-start gap-0 pb-1">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-default-500 sm:text-xs">
+                Kesehatan Stok
+              </p>
+              <p className="text-[10px] text-default-400 sm:text-[11px]">
+                Persentase SKU vs minimum stok seluruh lokasi
+              </p>
+            </CardHeader>
+            <CardBody className="pt-1">
+              <StockPieChart
+                summary={stockSummary}
+                loading={stockSummaryLoading}
+              />
+            </CardBody>
+          </Card>
+        </div>
       </div>
 
       <div className="space-y-3">
