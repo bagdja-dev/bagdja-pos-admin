@@ -4,9 +4,9 @@
   "private": true,
   "description": "Tenant back-office for Bagdja POS (Next.js App Router + HeroUI)",
   "scripts": {
-    "dev": "next dev -p 5007",
-    "build": "next build",
-    "start": "next start -p 5007",
+    "dev": "node init && next dev -p 5007",
+    "build": "node init && next build",
+    "start": "node init && next start -p 5007",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },
